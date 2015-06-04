@@ -96,7 +96,6 @@ def extract_features(data):
 #and output a matrix that can be used to conduct
 #error analysis.
 def perform_cross_validation(pipeline, train):
-    print len(train)
     kf = KFold(len(train), n_folds=5)
     score_count = 0
     score_total = 0.0
@@ -112,6 +111,13 @@ def perform_cross_validation(pipeline, train):
         score = evaluation.quadratic_weighted_kappa(y = y_test, y_pred = predictions)
         score_total += score
         print "Score " + str(score_count) + ": " + str(score)
+
+        X_test["median_relevance_pred"] = predictions
+        X_test["(i-j)^2"] = [(row["median_relevance"] - row["median_relevance_pred"])**2 for idx, row in X_test.loc[:, ("median_relevance","median_relevance_pred")].iterrows()]
+        
+        filename = "Error Analysis Iteration " + str(score_count) + ".csv"
+        X_test.to_csv(filename, index=False)
+        
     average_score = score_total/float(score_count)
     print "Average score: " + str(average_score) 
 
