@@ -73,21 +73,30 @@ features = FeatureMapper([('QueryBagOfWords',          'query',                 
                           ('DescriptionBagOfWords',    'product_description',         CountVectorizer(max_features=200)),
                           ('QueryTokensInTitle',       'query_tokens_in_title',       SimpleTransform()),
                           ('QueryTokensInDescription', 'query_tokens_in_description', SimpleTransform()),
-                          ('QueryLength',              'query_length',                SimpleTransform())])
+                          ('QueryLength',              'query_length',                SimpleTransform()),
+                          ('PQueryTokensInDescription','percent_query_tokens_in_description', SimpleTransform()),
+                          ('PQueryTokensInTitle',      'percent_query_tokens_in_title', SimpleTransform())])
 
 def extract_features(data):
     token_pattern = re.compile(r"(?u)\b\w\w+\b")
     data["query_tokens_in_title"] = 0.0
     data["query_tokens_in_description"] = 0.0
+    data["percent_query_tokens_in_description"] = 0.0
+    data["percent_query_tokens_in_title"] = 0.0
     for i, row in data.iterrows():
         query = set(x.lower() for x in token_pattern.findall(row["query"]))
         title = set(x.lower() for x in token_pattern.findall(row["product_title"]))
         description = set(x.lower() for x in token_pattern.findall(row["product_description"]))
         if len(title) > 0:
             data.set_value(i, "query_tokens_in_title", float(len(query.intersection(title)))/float(len(title)))
+            data.set_value(i, "percent_query_tokens_in_title", float(len(query.intersection(title)))/float(len(query)))
         if len(description) > 0:
             data.set_value(i, "query_tokens_in_description", float(len(query.intersection(description)))/float(len(description)))
+            data.set_value(i, "percent_query_tokens_in_description", float(len(query.intersection(description)))/float(len(query)))
         data.set_value(i, "query_length", len(query))
+
+        #Add feature - indicator of whether there is an exact match of the query that exists in the description
+
         #Other feature ideas - number of words in query, popularity of query (% of searches)
         #Also try adding a feature that simply contains the median or mean rating for that particular query - 
         #this may be what the CountVectorizer is doing - figure out what CountVectorizer does
@@ -135,7 +144,7 @@ def ouput_final_model(pipeline, train, test):
 extract_features(train)
 extract_features(test)
 
-'''
+
 pipeline = Pipeline([("extract_features", features),
                      ("classify", RandomForestClassifier(n_estimators=200,
                                                          n_jobs=1,
@@ -144,9 +153,8 @@ pipeline = Pipeline([("extract_features", features),
 '''
 pipeline = Pipeline([("extract_features", features),
                     ("classify", GaussianNB())])
-
-perform_cross_validation(pipeline, train)
+'''
 #perform_cross_validation(pipeline, train)
-#ouput_final_model(pipeline = pipeline, train = train, test = test)
+ouput_final_model(pipeline = pipeline, train = train, test = test)
 
 #Need to develop an internal, quick cross validation framework for testing the models
