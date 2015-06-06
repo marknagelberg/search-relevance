@@ -77,7 +77,9 @@ features = FeatureMapper([('QueryBagOfWords',          'query',                 
                           ('PQueryTokensInDescription','percent_query_tokens_in_description', SimpleTransform()),
                           ('PQueryTokensInTitle',      'percent_query_tokens_in_title', SimpleTransform()),
                           ('ExactQueryInTitle',        'exact_query_in_title',        SimpleTransform()),
-                          ('ExactQueryInDescription',  'exact_query_in_description',  SimpleTransform())])
+                          ('ExactQueryInDescription',  'exact_query_in_description',  SimpleTransform()),
+                          ('SpaceRemovedQinT',         'space_removed_q_in_t',        SimpleTransform()),
+                          ('SpaceRemovedQinD',         'space_removed_q_in_d',        SimpleTransform())])
 
 def extract_features(data):
     token_pattern = re.compile(r"(?u)\b\w\w+\b")
@@ -106,6 +108,19 @@ def extract_features(data):
         if row["query"].lower() in row["product_description"].lower():
             exact_query_in_description = 1
         data.set_value(i, "exact_query_in_description", exact_query_in_description)
+        q_space_removed = row["query"].lower().translate(None, ' -')
+        t_space_removed = row["product_title"].lower().translate(None, ' -')
+        d_space_removed = row["product_description"].lower().translate(None, ' -')
+
+        if q_space_removed in t_space_removed:
+            data.set_value(i, "space_removed_q_in_t", 1)
+        else:
+            data.set_value(i, "space_removed_q_in_t", 0)
+
+        if q_space_removed in d_space_removed:
+            data.set_value(i, "space_removed_q_in_d", 1)
+        else:
+            data.set_value(i, "space_removed_q_in_d", 0)
 
         
 
@@ -172,7 +187,7 @@ pipeline = Pipeline([("extract_features", features),
 pipeline = Pipeline([("extract_features", features),
                     ("classify", GaussianNB())])
 '''
-perform_cross_validation(pipeline, train)
-#ouput_final_model(pipeline = pipeline, train = train, test = test)
+#perform_cross_validation(pipeline, train)
+ouput_final_model(pipeline = pipeline, train = train, test = test)
 
 #Need to develop an internal, quick cross validation framework for testing the models

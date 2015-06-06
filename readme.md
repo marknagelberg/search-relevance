@@ -10,6 +10,11 @@ data.
 This probably makes sense, because the overall rating of query results is high, so any mistake
 is probably going to err on the high side. 
 
+TO DO:
+Add and test features (see below)
+Add comments to your code (so other can undersetand and also so you can understand - your
+code borrows a lot from others)
+
 Feature ideas:
 Median or mean rating in training for that particular query, across all titles and descriptions
 Variance rating in training for that particular query, across all titles and descriptions
