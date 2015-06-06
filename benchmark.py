@@ -75,7 +75,9 @@ features = FeatureMapper([('QueryBagOfWords',          'query',                 
                           ('QueryTokensInDescription', 'query_tokens_in_description', SimpleTransform()),
                           ('QueryLength',              'query_length',                SimpleTransform()),
                           ('PQueryTokensInDescription','percent_query_tokens_in_description', SimpleTransform()),
-                          ('PQueryTokensInTitle',      'percent_query_tokens_in_title', SimpleTransform())])
+                          ('PQueryTokensInTitle',      'percent_query_tokens_in_title', SimpleTransform()),
+                          ('ExactQueryInTitle',        'exact_query_in_title',        SimpleTransform()),
+                          ('ExactQueryInDescription',  'exact_query_in_description',  SimpleTransform())])
 
 def extract_features(data):
     token_pattern = re.compile(r"(?u)\b\w\w+\b")
@@ -94,8 +96,18 @@ def extract_features(data):
             data.set_value(i, "query_tokens_in_description", float(len(query.intersection(description)))/float(len(description)))
             data.set_value(i, "percent_query_tokens_in_description", float(len(query.intersection(description)))/float(len(query)))
         data.set_value(i, "query_length", len(query))
+        data.set_value(i, "description_length", len(description))
+        data.set_value(i, "title_length", len(title))
+        exact_query_in_title = 0
+        if row["query"].lower() in row["product_title"].lower():
+            exact_query_in_title = 1
+        data.set_value(i, "exact_query_in_title", exact_query_in_title)
+        exact_query_in_description = 0
+        if row["query"].lower() in row["product_description"].lower():
+            exact_query_in_description = 1
+        data.set_value(i, "exact_query_in_description", exact_query_in_description)
 
-        #Add feature - indicator of whether there is an exact match of the query that exists in the description
+        
 
         #Other feature ideas - number of words in query, popularity of query (% of searches)
         #Also try adding a feature that simply contains the median or mean rating for that particular query - 
@@ -108,6 +120,7 @@ def perform_cross_validation(pipeline, train):
     kf = KFold(len(train), n_folds=5)
     score_count = 0
     score_total = 0.0
+    frames = []
     for train_index, test_index in kf:
         X_train = train.loc[train_index]
         y_train = train.loc[train_index,"median_relevance"]
@@ -123,9 +136,13 @@ def perform_cross_validation(pipeline, train):
 
         X_test["median_relevance_pred"] = predictions
         X_test["(i-j)^2"] = [(row["median_relevance"] - row["median_relevance_pred"])**2 for idx, row in X_test.loc[:, ("median_relevance","median_relevance_pred")].iterrows()]
+        X_test["i-j"] = [row["median_relevance"] - row["median_relevance_pred"] for idx, row in X_test.loc[:, ("median_relevance","median_relevance_pred")].iterrows()]
         
         filename = "Error Analysis Iteration " + str(score_count) + ".csv"
+
         X_test.to_csv(filename, index=False)
+        frames.append(X_test)
+    pd.concat(frames).to_csv("Master Error Analysis File.csv", index=False)
         
     average_score = score_total/float(score_count)
     print "Average score: " + str(average_score) 
@@ -144,6 +161,7 @@ def ouput_final_model(pipeline, train, test):
 extract_features(train)
 extract_features(test)
 
+train.to_csv("Explore Training Set (With Transformations).csv", index=False)
 
 pipeline = Pipeline([("extract_features", features),
                      ("classify", RandomForestClassifier(n_estimators=200,
@@ -154,7 +172,7 @@ pipeline = Pipeline([("extract_features", features),
 pipeline = Pipeline([("extract_features", features),
                     ("classify", GaussianNB())])
 '''
-#perform_cross_validation(pipeline, train)
-ouput_final_model(pipeline = pipeline, train = train, test = test)
+perform_cross_validation(pipeline, train)
+#ouput_final_model(pipeline = pipeline, train = train, test = test)
 
 #Need to develop an internal, quick cross validation framework for testing the models
