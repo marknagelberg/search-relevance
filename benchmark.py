@@ -79,7 +79,8 @@ features = FeatureMapper([('QueryBagOfWords',          'query',                 
                           ('ExactQueryInTitle',        'exact_query_in_title',        SimpleTransform()),
                           ('ExactQueryInDescription',  'exact_query_in_description',  SimpleTransform()),
                           ('SpaceRemovedQinT',         'space_removed_q_in_t',        SimpleTransform()),
-                          ('SpaceRemovedQinD',         'space_removed_q_in_d',        SimpleTransform())])
+                          ('SpaceRemovedQinD',         'space_removed_q_in_d',        SimpleTransform()),
+                          ('QMeanTrainingRelevance',   'q_mean_of_training_relevance',SimpleTransform())])
 
 def extract_features(data):
     token_pattern = re.compile(r"(?u)\b\w\w+\b")
@@ -127,6 +128,24 @@ def extract_features(data):
         #Other feature ideas - number of words in query, popularity of query (% of searches)
         #Also try adding a feature that simply contains the median or mean rating for that particular query - 
         #this may be what the CountVectorizer is doing - figure out what CountVectorizer does
+
+#CAN BREAK THE FUNCTIONS BELOW INTO ONE AND MAKE IT A LOT FASTER
+#WHENEVER YOU GET A NED MEAN RATING FOR A QUERY, USE SLICING TO APPLY
+#THAT VALUE TO ALL RELEVANT MEMBERS IN TEST SET
+def extract_training_features(train):
+    train_group = train.groupby('query')
+    for i, row in train.iterrows():
+        q_mean = train_group.get_group(row["query"])["median_relevance"].mean()
+        train.set_value(i, "q_mean_of_training_relevance", q_mean)
+
+def extract_test_features(train, test):
+    train_group = train.groupby('query')
+    for i, row in test.iterrows():
+        q_mean = train_group.get_group(row["query"])["median_relevance"].mean()
+        test.set_value(i, "q_mean_of_training_relevance", q_mean)
+
+
+
 
 #Evaluates model on the training data
 #and output a matrix that can be used to conduct
@@ -176,7 +195,14 @@ def ouput_final_model(pipeline, train, test):
 extract_features(train)
 extract_features(test)
 
+#Extract features that can only be extracted on the training set
+extract_training_features(train)
+#Extract features in test set that require looking at the training set
+#extract_test_features(train, test)
+extract_test_features(train, test)
+
 train.to_csv("Explore Training Set (With Transformations).csv", index=False)
+test.to_csv("Explore Test Set (With Transformations).csv", index=False)
 
 pipeline = Pipeline([("extract_features", features),
                      ("classify", RandomForestClassifier(n_estimators=200,
