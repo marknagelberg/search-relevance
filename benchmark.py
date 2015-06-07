@@ -127,10 +127,16 @@ def extract_features(data):
 def extract_training_features(train, test):
     train_group = train.groupby('query')
     test["q_mean_of_training_relevance"] = 0.0
+    test["q_median_of_training_relevance"] = 0.0
     for i, row in train.iterrows():
-        q_mean = train_group.get_group(row["query"])["median_relevance"].mean()
+        group = train_group.get_group(row["query"])["median_relevance"]
+        q_mean = group.mean()
         train.set_value(i, "q_mean_of_training_relevance", q_mean)
         test.loc[test["query"] == row["query"], "q_mean_of_training_relevance"] = q_mean
+
+        q_median = group.median()
+        train.set_value(i, "q_median_of_training_relevance", q_median)
+        test.loc[test["query"] == row["query"], "q_median_of_training_relevance"] = q_median
 
 #Evaluates model on the training data
 #and output a matrix that can be used to conduct
