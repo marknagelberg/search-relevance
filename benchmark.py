@@ -80,7 +80,9 @@ features = FeatureMapper([('QueryBagOfWords',          'query',                 
                           ('ExactQueryInDescription',  'exact_query_in_description',  SimpleTransform()),
                           ('SpaceRemovedQinT',         'space_removed_q_in_t',        SimpleTransform()),
                           ('SpaceRemovedQinD',         'space_removed_q_in_d',        SimpleTransform()),
-                          ('QMeanTrainingRelevance',   'q_mean_of_training_relevance',SimpleTransform())])
+                          ('QMeanTrainingRelevance',   'q_mean_of_training_relevance',SimpleTransform()),
+                          ('QMedianTrainingRelevance', 'q_median_of_training_relevance',SimpleTransform()),
+                          ('ClosestTitleRelevance',    'closest_title_relevance',     SimpleTransform())])
 
 def extract_features(data):
     token_pattern = re.compile(r"(?u)\b\w\w+\b")
@@ -123,20 +125,82 @@ def extract_features(data):
         else:
             data.set_value(i, "space_removed_q_in_d", 0)
 
+def get_string_similarity(s1, s2):
+    token_pattern = re.compile(r"(?u)\b\w\w+\b")
+    s1_tokens = set(x.lower() for x in token_pattern.findall(s1))
+    s2_tokens = set(x.lower() for x in token_pattern.findall(s2))
+    return float(len(s1_tokens.intersection(s2_tokens)))/float(len(s1_tokens.union(s2_tokens)))
+
+def get_weighted_description_relevance(group, row):
+    '''
+    Takes a group of a particular query and a row within that 
+    group and returns the weighted median relevance,
+    weighted according to how  "close" description is to  other 
+    rows within the group
+    '''
+    pass
+
+def get_weighted_title_relevance(group, row):
+    '''
+    Takes a group of a particular query and a row within that 
+    group and returns the weighted median relevance,
+    weighted according to how  "close" title is to  other 
+    rows within the group
+    '''
+    pass
+
+def get_closest_description_relevance(group, row):
+    '''
+    Takes a group of a particular query and a row within that 
+    group and returns the median relevance of the "closest" description in other 
+    rows within the group
+    '''
+    pass
+
+def get_closest_title_relevance(group, row):
+    '''
+    Takes a group of a particular query and a row within that 
+    group and returns the median relevance of the "closest" title in other 
+    rows within the group
+    '''
+    return_rating = 0
+    min_similarity = 0
+    for i, group_row in group.iterrows():
+        if group_row['id'] != row['id']:
+            similarity = get_string_similarity(row['product_title'], group_row['product_title'])
+            if similarity > min_similarity:
+                min_similarity = similarity
+                return_rating = group_row['median_relevance']
+    return return_rating
+
+
         
 def extract_training_features(train, test):
     train_group = train.groupby('query')
     test["q_mean_of_training_relevance"] = 0.0
     test["q_median_of_training_relevance"] = 0.0
+    test["closest_title_relevance"] = 0
     for i, row in train.iterrows():
-        group = train_group.get_group(row["query"])["median_relevance"]
-        q_mean = group.mean()
+        group = train_group.get_group(row["query"])
+        q_mean = group["median_relevance"].mean()
         train.set_value(i, "q_mean_of_training_relevance", q_mean)
         test.loc[test["query"] == row["query"], "q_mean_of_training_relevance"] = q_mean
 
-        q_median = group.median()
+        q_median = group["median_relevance"].median()
         train.set_value(i, "q_median_of_training_relevance", q_median)
         test.loc[test["query"] == row["query"], "q_median_of_training_relevance"] = q_median
+
+        closest_title_relevance = get_closest_title_relevance(group, row)
+        train.set_value(i, "closest_title_relevance", closest_title_relevance)
+
+    for i, row in test.iterrows():
+        group = train_group.get_group(row["query"])
+        closest_title_relevance = get_closest_title_relevance(group, row)
+        test.set_value(i, "closest_title_relevance", closest_title_relevance)
+
+
+
+
 
 #Evaluates model on the training data
 #and output a matrix that can be used to conduct
@@ -204,6 +268,6 @@ pipeline = Pipeline([("extract_features", features),
                     ("classify", GaussianNB())])
 '''
 #perform_cross_validation(pipeline, train)
-#ouput_final_model(pipeline = pipeline, train = train, test = test)
+ouput_final_model(pipeline = pipeline, train = train, test = test)
 
 #Need to develop an internal, quick cross validation framework for testing the models
