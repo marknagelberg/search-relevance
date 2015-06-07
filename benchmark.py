@@ -124,28 +124,13 @@ def extract_features(data):
             data.set_value(i, "space_removed_q_in_d", 0)
 
         
-
-        #Other feature ideas - number of words in query, popularity of query (% of searches)
-        #Also try adding a feature that simply contains the median or mean rating for that particular query - 
-        #this may be what the CountVectorizer is doing - figure out what CountVectorizer does
-
-#CAN BREAK THE FUNCTIONS BELOW INTO ONE AND MAKE IT A LOT FASTER
-#WHENEVER YOU GET A NED MEAN RATING FOR A QUERY, USE SLICING TO APPLY
-#THAT VALUE TO ALL RELEVANT MEMBERS IN TEST SET
-def extract_training_features(train):
+def extract_training_features(train, test):
     train_group = train.groupby('query')
+    test["q_mean_of_training_relevance"] = 0.0
     for i, row in train.iterrows():
         q_mean = train_group.get_group(row["query"])["median_relevance"].mean()
         train.set_value(i, "q_mean_of_training_relevance", q_mean)
-
-def extract_test_features(train, test):
-    train_group = train.groupby('query')
-    for i, row in test.iterrows():
-        q_mean = train_group.get_group(row["query"])["median_relevance"].mean()
-        test.set_value(i, "q_mean_of_training_relevance", q_mean)
-
-
-
+        test.loc[test["query"] == row["query"], "q_mean_of_training_relevance"] = q_mean
 
 #Evaluates model on the training data
 #and output a matrix that can be used to conduct
@@ -196,10 +181,9 @@ extract_features(train)
 extract_features(test)
 
 #Extract features that can only be extracted on the training set
-extract_training_features(train)
+extract_training_features(train, test)
 #Extract features in test set that require looking at the training set
 #extract_test_features(train, test)
-extract_test_features(train, test)
 
 train.to_csv("Explore Training Set (With Transformations).csv", index=False)
 test.to_csv("Explore Test Set (With Transformations).csv", index=False)
@@ -214,6 +198,6 @@ pipeline = Pipeline([("extract_features", features),
                     ("classify", GaussianNB())])
 '''
 #perform_cross_validation(pipeline, train)
-ouput_final_model(pipeline = pipeline, train = train, test = test)
+#ouput_final_model(pipeline = pipeline, train = train, test = test)
 
 #Need to develop an internal, quick cross validation framework for testing the models

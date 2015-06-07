@@ -14,6 +14,8 @@ TO DO:
 Add and test features (see below)
 Add comments to your code (so other can undersetand and also so you can understand - your
 code borrows a lot from others)
+Figure out what CountVectorizer does and see if there would be better alternatives
+Adjust cross validation so it always includes a proportionate number of each query
 
 Feature ideas:
 Median or mean rating in training for that particular query, across all titles and descriptions
@@ -34,3 +36,6 @@ making a feature that converts the title to lower case and removes all spaces - 
 whether the query exists in the title. Also consider removing dashes '-' - for example, the "spiderman" query
 has results with "Spider-man"
 
+Are there repeated query/title combinations? If so, it seems that any time we encounter a known query/title combination
+in test set, we should just assign it the rating seen already. Check to see whether this is the case and also check
+the variation in ratings among common query/title combos.
