@@ -82,7 +82,8 @@ features = FeatureMapper([('QueryBagOfWords',          'query',                 
                           ('SpaceRemovedQinD',         'space_removed_q_in_d',        SimpleTransform()),
                           ('QMeanTrainingRelevance',   'q_mean_of_training_relevance',SimpleTransform()),
                           ('QMedianTrainingRelevance', 'q_median_of_training_relevance',SimpleTransform()),
-                          ('ClosestTitleRelevance',    'closest_title_relevance',     SimpleTransform())])
+                          ('ClosestTitleRelevance',    'closest_title_relevance',     SimpleTransform()),
+                          ('ClosestDescriptionRelevance', 'closest_description_relevance', SimpleTransform())])
 
 def extract_features(data):
     token_pattern = re.compile(r"(?u)\b\w\w+\b")
@@ -129,7 +130,10 @@ def get_string_similarity(s1, s2):
     token_pattern = re.compile(r"(?u)\b\w\w+\b")
     s1_tokens = set(x.lower() for x in token_pattern.findall(s1))
     s2_tokens = set(x.lower() for x in token_pattern.findall(s2))
-    return float(len(s1_tokens.intersection(s2_tokens)))/float(len(s1_tokens.union(s2_tokens)))
+    if len(s1_tokens.union(s2_tokens)) == 0:
+        return 0
+    else:
+        return float(len(s1_tokens.intersection(s2_tokens)))/float(len(s1_tokens.union(s2_tokens)))
 
 def get_weighted_description_relevance(group, row):
     '''
@@ -155,7 +159,15 @@ def get_closest_description_relevance(group, row):
     group and returns the median relevance of the "closest" description in other 
     rows within the group
     '''
-    pass
+    return_rating = 0
+    min_similarity = 0
+    for i, group_row in group.iterrows():
+        if group_row['id'] != row['id']:
+            similarity = get_string_similarity(row['product_description'], group_row['product_description'])
+            if similarity > min_similarity:
+                min_similarity = similarity
+                return_rating = group_row['median_relevance']
+    return return_rating
 
 def get_closest_title_relevance(group, row):
     '''
@@ -193,10 +205,16 @@ def extract_training_features(train, test):
         closest_title_relevance = get_closest_title_relevance(group, row)
         train.set_value(i, "closest_title_relevance", closest_title_relevance)
 
+        closest_description_relevance = get_closest_description_relevance(group, row)
+        train.set_value(i, "closest_description_relevance", closest_description_relevance)
+
     for i, row in test.iterrows():
         group = train_group.get_group(row["query"])
         closest_title_relevance = get_closest_title_relevance(group, row)
         test.set_value(i, "closest_title_relevance", closest_title_relevance)
+
+        closest_description_relevance = get_closest_description_relevance(group, row)
+        test.set_value(i, "closest_description_relevance", closest_description_relevance)
 
 
 
