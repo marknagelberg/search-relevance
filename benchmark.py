@@ -83,7 +83,9 @@ features = FeatureMapper([('QueryBagOfWords',          'query',                 
                           ('QMeanTrainingRelevance',   'q_mean_of_training_relevance',SimpleTransform()),
                           ('QMedianTrainingRelevance', 'q_median_of_training_relevance',SimpleTransform()),
                           ('ClosestTitleRelevance',    'closest_title_relevance',     SimpleTransform()),
-                          ('ClosestDescriptionRelevance', 'closest_description_relevance', SimpleTransform())])
+                          ('ClosestDescriptionRelevance', 'closest_description_relevance', SimpleTransform()),
+                          ('WeightedTitleRelevance',   'weighted_title_relevance',    SimpleTransform()),
+                          ('WeightedDescriptionRelevance', 'weighted_description_relevance', SimpleTransform())])
 
 def extract_features(data):
     token_pattern = re.compile(r"(?u)\b\w\w+\b")
@@ -142,7 +144,14 @@ def get_weighted_description_relevance(group, row):
     weighted according to how  "close" description is to  other 
     rows within the group
     '''
-    pass
+    weighted_rating = 0.0
+    num_similarities = 0
+    for i, group_row in group.iterrows():
+        if group_row['id'] != row['id']:
+            similarity = get_string_similarity(row['product_description'], group_row['product_description'])
+            weighted_rating += group_row['median_relevance'] * similarity
+            num_similarities += 1
+    return weighted_rating/float(num_similarities)
 
 def get_weighted_title_relevance(group, row):
     '''
@@ -151,7 +160,15 @@ def get_weighted_title_relevance(group, row):
     weighted according to how  "close" title is to  other 
     rows within the group
     '''
-    pass
+    weighted_rating = 0.0
+    num_similarities = 0
+    for i, group_row in group.iterrows():
+        if group_row['id'] != row['id']:
+            similarity = get_string_similarity(row['product_title'], group_row['product_title'])
+            weighted_rating += group_row['median_relevance'] * similarity
+            num_similarities += 1
+    return weighted_rating/float(num_similarities)
+
 
 def get_closest_description_relevance(group, row):
     '''
@@ -208,6 +225,12 @@ def extract_training_features(train, test):
         closest_description_relevance = get_closest_description_relevance(group, row)
         train.set_value(i, "closest_description_relevance", closest_description_relevance)
 
+        weighted_title_relevance = get_weighted_title_relevance(group, row)
+        train.set_value(i, "weighted_title_relevance", weighted_title_relevance)
+
+        weighted_description_relevance = get_weighted_description_relevance(group, row)
+        train.set_value(i, "weighted_description_relevance", weighted_description_relevance)
+
     for i, row in test.iterrows():
         group = train_group.get_group(row["query"])
         closest_title_relevance = get_closest_title_relevance(group, row)
@@ -216,9 +239,11 @@ def extract_training_features(train, test):
         closest_description_relevance = get_closest_description_relevance(group, row)
         test.set_value(i, "closest_description_relevance", closest_description_relevance)
 
+        weighted_title_relevance = get_weighted_title_relevance(group, row)
+        test.set_value(i, "weighted_title_relevance", weighted_title_relevance)
 
-
-
+        weighted_description_relevance = get_weighted_description_relevance(group, row)
+        test.set_value(i, "weighted_description_relevance", weighted_description_relevance)
 
 #Evaluates model on the training data
 #and output a matrix that can be used to conduct
