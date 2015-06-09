@@ -10,6 +10,16 @@ from sklearn.naive_bayes import GaussianNB
 from sklearn.cross_validation import KFold
 import evaluation
 
+#Imports taken from the porter stemmer code https://www.kaggle.com/duttaroy/crowdflower-search-relevance/porter-stemmer/run/11533
+from nltk.stem.porter import *
+from bs4 import BeautifulSoup
+from sklearn.decomposition import TruncatedSVD
+from sklearn.preprocessing import StandardScaler
+from sklearn.svm import SVC
+from sklearn.feature_extraction.text import TfidfVectorizer
+from sklearn.feature_extraction import text
+
+
 
 #The first version of this script was taken from
 #https://www.kaggle.com/users/993/ben-hamner/crowdflower-search-relevance/python-benchmark
@@ -114,9 +124,12 @@ def extract_features(data):
         if row["query"].lower() in row["product_description"].lower():
             exact_query_in_description = 1
         data.set_value(i, "exact_query_in_description", exact_query_in_description)
-        q_space_removed = row["query"].lower().translate(None, ' -')
-        t_space_removed = row["product_title"].lower().translate(None, ' -')
-        d_space_removed = row["product_description"].lower().translate(None, ' -')
+
+        translate_to = u''
+        translate_table = dict((ord(char), translate_to) for char in u' -')
+        q_space_removed = row["query"].lower().translate(translate_table)
+        t_space_removed = row["product_title"].lower().translate(translate_table)
+        d_space_removed = row["product_description"].lower().translate(translate_table)
 
         if q_space_removed in t_space_removed:
             data.set_value(i, "space_removed_q_in_t", 1)
@@ -245,6 +258,30 @@ def extract_training_features(train, test):
         weighted_description_relevance = get_weighted_description_relevance(group, row)
         test.set_value(i, "weighted_description_relevance", weighted_description_relevance)
 
+
+def stem_data(data):
+
+    stemmer = PorterStemmer()
+
+    for i, row in data.iterrows():
+
+        q=(" ").join([z for z in BeautifulSoup(row["query"]).get_text(" ").split(" ")])
+        t = (" ").join([z for z in BeautifulSoup(row["product_title"]).get_text(" ").split(" ")]) 
+        d = (" ").join([z for z in BeautifulSoup(row["product_description"]).get_text(" ").split(" ")])
+
+        q=re.sub("[^a-zA-Z0-9]"," ", q)
+        t=re.sub("[^a-zA-Z0-9]"," ", t)
+        d=re.sub("[^a-zA-Z0-9]"," ", d)
+
+        q= (" ").join([stemmer.stem(z) for z in q.split(" ")])
+        t= (" ").join([stemmer.stem(z) for z in t.split(" ")])
+        d= (" ").join([stemmer.stem(z) for z in d.split(" ")])
+        
+        data.set_value(i, "query", q)
+        data.set_value(i, "product_title", t)
+        data.set_value(i, "product_description", d)
+
+
 #Evaluates model on the training data
 #and output a matrix that can be used to conduct
 #error analysis.
@@ -290,13 +327,22 @@ def ouput_final_model(pipeline, train, test):
     submission.to_csv("python_benchmark.csv", index=False)
 
 
+
+'''
+#Incorporate stop words below after getting basic stemming working.
+stop_words = ['http','www','img','border','0','1','2','3','4','5','6','7','8','9','a','the']
+stop_words = text.ENGLISH_STOP_WORDS.union(stop_words)
+'''
+
+stem_data(train)
+stem_data(test)
+
 extract_features(train)
 extract_features(test)
 
+
 #Extract features that can only be extracted on the training set
 extract_training_features(train, test)
-#Extract features in test set that require looking at the training set
-#extract_test_features(train, test)
 
 train.to_csv("Explore Training Set (With Transformations).csv", index=False)
 test.to_csv("Explore Test Set (With Transformations).csv", index=False)
@@ -306,10 +352,8 @@ pipeline = Pipeline([("extract_features", features),
                                                          n_jobs=1,
                                                          min_samples_split=2,
                                                          random_state=1))])
-'''
-pipeline = Pipeline([("extract_features", features),
-                    ("classify", GaussianNB())])
-'''
+
+
 #perform_cross_validation(pipeline, train)
 ouput_final_model(pipeline = pipeline, train = train, test = test)
 

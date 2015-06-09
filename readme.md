@@ -16,16 +16,14 @@ Add comments to your code (so other can undersetand and also so you can understa
 code borrows a lot from others)
 Figure out what CountVectorizer does and see if there would be better alternatives
 Adjust cross validation so it always includes a proportionate number of each query
+Incorporate porter stemmer code https://www.kaggle.com/duttaroy/crowdflower-search-relevance/porter-stemmer/run/11533
 
 Feature ideas:
-Median or mean rating in training for that particular query, across all titles and descriptions
 Variance rating in training for that particular query, across all titles and descriptions
-It would also be good to do this taking into consideration descriptions - get the average rating and 
-then somehow calculate via some nearest neighbour calculation how similar the description is to some other description
-that had a particular rating.
 
 
-Note that for the above two features, it relies on the fact that every query in training occurs in testing.
+
+Note that for the some of our features rely on the fact that every query in training occurs in testing.
 Basically, to use these features, you would perform a preprocessing step to X_test to add these 
 variables before you run the model. Also note that cross validation on our training set may become 
 tricky when you use these variables since they assume you have at least one example of each query.
