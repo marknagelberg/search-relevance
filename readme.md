@@ -17,6 +17,11 @@ code borrows a lot from others)
 Figure out what CountVectorizer does and see if there would be better alternatives
 Adjust cross validation so it always includes a proportionate number of each query
 Incorporate porter stemmer code https://www.kaggle.com/duttaroy/crowdflower-search-relevance/porter-stemmer/run/11533
+Test out TFIDF
+Incorporate SVD transformation to TFIDF output TruncatedSVD(n_components=200, algorithm='randomized', n_iter=5, random_state=None, tol=0.0)
+Incorporate stop words below after getting basic stemming working.
+stop_words = ['http','www','img','border','0','1','2','3','4','5','6','7','8','9','a','the']
+stop_words = text.ENGLISH_STOP_WORDS.union(stop_words)
 
 Feature ideas:
 Variance rating in training for that particular query, across all titles and descriptions
