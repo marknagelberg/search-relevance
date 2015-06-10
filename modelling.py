@@ -119,7 +119,7 @@ def ouput_final_model(pipeline, train, test):
     submission.to_csv("python_benchmark.csv", index=False)
 
 #                          Feature Set Name            Data Frame Column              Transformer
-features = FeatureMapper([('AllWords',                  'all_words',  TfidfVectorizer(min_df=3,  max_features=None, strip_accents='unicode', analyzer='word',token_pattern=r'\w{1,}', ngram_range=(2, 2), use_idf=1,smooth_idf=1,sublinear_tf=1, stop_words = 'english')),
+features = FeatureMapper([('QueryAndProductTitle', 'query_and_product_title', TfidfVectorizer(min_df=3,  max_features=None, strip_accents='unicode', analyzer='word',token_pattern=r'\w{1,}',ngram_range=(1, 5), use_idf=1,smooth_idf=1,sublinear_tf=1, stop_words = 'english')),
                           ('QueryTokensInTitle',       'query_tokens_in_title',       SimpleTransform()),
                           ('QueryTokensInDescription', 'query_tokens_in_description', SimpleTransform()),
                           ('QueryLength',              'query_length',                SimpleTransform()),
@@ -146,6 +146,10 @@ pipeline = Pipeline([("extract_features", features),
 
 train = cPickle.load(open('train_extracted_df.pkl', 'r'))
 test = cPickle.load(open('test_extracted_df.pkl', 'r'))
+
+#Move to extraction area if this works
+train["query_and_product_title"] = train["query"] + " " + train["product_title"]
+test["query_and_product_title"] = test["query"] + " " + test["product_title"]
 
 #perform_cross_validation(pipeline, train)
 ouput_final_model(pipeline = pipeline, train = train, test = test)
