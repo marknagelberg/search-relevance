@@ -48,11 +48,19 @@ def extract_features(data):
             exact_query_in_description = 1
         data.set_value(i, "exact_query_in_description", exact_query_in_description)
 
+        #USE BELOW IF USING THE PORTER STEMMER
+        '''
         translate_to = u''
         translate_table = dict((ord(char), translate_to) for char in u' -')
         q_space_removed = row["query"].lower().translate(translate_table)
         t_space_removed = row["product_title"].lower().translate(translate_table)
         d_space_removed = row["product_description"].lower().translate(translate_table)
+        '''
+
+        #USE BELOW IF NOT USING THE PORTER STEMMER
+        q_space_removed = row["query"].lower().translate(None, ' -')
+        t_space_removed = row["product_title"].lower().translate(None, ' -')
+        d_space_removed = row["product_description"].lower().translate(None, ' -')
 
         if q_space_removed in t_space_removed:
             data.set_value(i, "space_removed_q_in_t", 1)
@@ -73,71 +81,30 @@ def get_string_similarity(s1, s2):
     else:
         return float(len(s1_tokens.intersection(s2_tokens)))/float(len(s1_tokens.union(s2_tokens)))
 
-def get_weighted_description_relevance(group, row):
+
+def calculate_nearby_relevance_tuple(group, row, col_name):
     '''
-    Takes a group of a particular query and a row within that 
-    group and returns the weighted median relevance,
-    weighted according to how  "close" description is to  other 
-    rows within the group
+    Takes a group of rows for a particular query and a row within that 
+    group and returns several calculations based on the median relevance of
+    "similar" entries. Returns a tuple of calculations. Tuple returns a rating that
+    weights similarity across all other rows and returns a rating that is simply the 
+    rating of the one "closest" row.
+    TO DO - fix weighted rating - calculate weighted similarity for each possible rating, 
+    scale by num comparisons
     '''
     weighted_rating = 0.0
     num_similarities = 0
-    for i, group_row in group.iterrows():
-        if group_row['id'] != row['id']:
-            similarity = get_string_similarity(row['product_description'], group_row['product_description'])
-            weighted_rating += group_row['median_relevance'] * similarity
-            num_similarities += 1
-    return weighted_rating/float(num_similarities)
-
-def get_weighted_title_relevance(group, row):
-    '''
-    Takes a group of a particular query and a row within that 
-    group and returns the weighted median relevance,
-    weighted according to how  "close" title is to  other 
-    rows within the group
-    '''
-    weighted_rating = 0.0
-    num_similarities = 0
-    for i, group_row in group.iterrows():
-        if group_row['id'] != row['id']:
-            similarity = get_string_similarity(row['product_title'], group_row['product_title'])
-            weighted_rating += group_row['median_relevance'] * similarity
-            num_similarities += 1
-    return weighted_rating/float(num_similarities)
-
-
-def get_closest_description_relevance(group, row):
-    '''
-    Takes a group of a particular query and a row within that 
-    group and returns the median relevance of the "closest" description in other 
-    rows within the group
-    '''
     return_rating = 0
     min_similarity = 0
     for i, group_row in group.iterrows():
         if group_row['id'] != row['id']:
-            similarity = get_string_similarity(row['product_description'], group_row['product_description'])
+            similarity = get_string_similarity(row[col_name], group_row[col_name])
+            num_similarities += 1
+            weighted_rating += group_row['median_relevance'] * similarity
             if similarity > min_similarity:
                 min_similarity = similarity
                 return_rating = group_row['median_relevance']
-    return return_rating
-
-def get_closest_title_relevance(group, row):
-    '''
-    Takes a group of a particular query and a row within that 
-    group and returns the median relevance of the "closest" title in other 
-    rows within the group
-    '''
-    return_rating = 0
-    min_similarity = 0
-    for i, group_row in group.iterrows():
-        if group_row['id'] != row['id']:
-            similarity = get_string_similarity(row['product_title'], group_row['product_title'])
-            if similarity > min_similarity:
-                min_similarity = similarity
-                return_rating = group_row['median_relevance']
-    return return_rating
-
+    return (return_rating, weighted_rating/float(num_similarities))
 
         
 def extract_training_features(train, test):
@@ -155,30 +122,22 @@ def extract_training_features(train, test):
         train.set_value(i, "q_median_of_training_relevance", q_median)
         test.loc[test["query"] == row["query"], "q_median_of_training_relevance"] = q_median
 
-        closest_title_relevance = get_closest_title_relevance(group, row)
+        (closest_title_relevance, weighted_title_relevance) = calculate_nearby_relevance_tuple(group, row, 'product_title')
         train.set_value(i, "closest_title_relevance", closest_title_relevance)
-
-        closest_description_relevance = get_closest_description_relevance(group, row)
-        train.set_value(i, "closest_description_relevance", closest_description_relevance)
-
-        weighted_title_relevance = get_weighted_title_relevance(group, row)
         train.set_value(i, "weighted_title_relevance", weighted_title_relevance)
 
-        weighted_description_relevance = get_weighted_description_relevance(group, row)
+        (closest_description_relevance, weighted_description_relevance) = calculate_nearby_relevance_tuple(group, row, 'product_description')
+        train.set_value(i, "closest_description_relevance", closest_description_relevance)
         train.set_value(i, "weighted_description_relevance", weighted_description_relevance)
 
     for i, row in test.iterrows():
         group = train_group.get_group(row["query"])
-        closest_title_relevance = get_closest_title_relevance(group, row)
+        (closest_title_relevance, weighted_title_relevance) = calculate_nearby_relevance_tuple(group, row, 'product_title')
         test.set_value(i, "closest_title_relevance", closest_title_relevance)
-
-        closest_description_relevance = get_closest_description_relevance(group, row)
-        test.set_value(i, "closest_description_relevance", closest_description_relevance)
-
-        weighted_title_relevance = get_weighted_title_relevance(group, row)
         test.set_value(i, "weighted_title_relevance", weighted_title_relevance)
 
-        weighted_description_relevance = get_weighted_description_relevance(group, row)
+        (closest_description_relevance, weighted_description_relevance) = calculate_nearby_relevance_tuple(group, row, 'product_description')
+        test.set_value(i, "closest_description_relevance", closest_description_relevance)        
         test.set_value(i, "weighted_description_relevance", weighted_description_relevance)
 
     train["all_words"] = train["query"] + " " + train["product_title"] + " " + train["product_description"]
@@ -211,8 +170,8 @@ def stem_data(data):
 train = pd.read_csv("input/train.csv").fillna("")
 test  = pd.read_csv("input/test.csv").fillna("")
 
-stem_data(train)
-stem_data(test)
+#stem_data(train)
+#stem_data(test)
 
 extract_features(train)
 extract_features(test)
