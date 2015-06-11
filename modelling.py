@@ -133,7 +133,9 @@ features = FeatureMapper([('QueryTokensInTitle',       'query_tokens_in_title', 
                           ('ClosestTitleRelevance',    'closest_title_relevance',     SimpleTransform()),
                           ('ClosestDescriptionRelevance', 'closest_description_relevance', SimpleTransform()),
                           ('WeightedTitleRelevance',   'weighted_title_relevance',    SimpleTransform()),
-                          ('WeightedDescriptionRelevance', 'weighted_description_relevance', SimpleTransform())])
+                          ('WeightedDescriptionRelevance', 'weighted_description_relevance', SimpleTransform()),
+                          ('WeightedDescriptionRelevanceTwo', 'weighted_description_relevance_two', SimpleTransform()),
+                          ('WeightedTitleRelevanceTwo', 'weighted_title_relevance_two', SimpleTransform())])
 
 
 # note - removed ('svd', TruncatedSVD(n_components=225, algorithm='randomized', n_iter=5, random_state=None, tol=0.0)) from below

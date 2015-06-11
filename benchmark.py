@@ -111,7 +111,10 @@ def calculate_nearby_relevance_tuple(group, row, col_name):
             if current_weighted_similarity > max_weighted_similarity:
                 max_weighted_similarity = current_weighted_similarity
                 max_weighted_median_rating = rating
-    return (return_rating, max_weighted_median_rating)
+
+
+    weighted_median_rating = float(sum(x * weighted_ratings[x][1] for x in weighted_ratings))/float(sum(weighted_ratings[x][0] for x in weighted_ratings))
+    return (return_rating, max_weighted_median_rating, weighted_median_rating)
 
         
 def extract_training_features(train, test):
@@ -129,23 +132,27 @@ def extract_training_features(train, test):
         train.set_value(i, "q_median_of_training_relevance", q_median)
         test.loc[test["query"] == row["query"], "q_median_of_training_relevance"] = q_median
 
-        (closest_title_relevance, weighted_title_relevance) = calculate_nearby_relevance_tuple(group, row, 'product_title')
+        (closest_title_relevance, weighted_title_relevance, weighted_title_relevance_two) = calculate_nearby_relevance_tuple(group, row, 'product_title')
         train.set_value(i, "closest_title_relevance", closest_title_relevance)
         train.set_value(i, "weighted_title_relevance", weighted_title_relevance)
+        train.set_value(i, "weighted_title_relevance_two", weighted_title_relevance_two)
 
-        (closest_description_relevance, weighted_description_relevance) = calculate_nearby_relevance_tuple(group, row, 'product_description')
+        (closest_description_relevance, weighted_description_relevance, weighted_description_relevance_two) = calculate_nearby_relevance_tuple(group, row, 'product_description')
         train.set_value(i, "closest_description_relevance", closest_description_relevance)
         train.set_value(i, "weighted_description_relevance", weighted_description_relevance)
+        train.set_value(i, "weighted_description_relevance_two", weighted_description_relevance_two)
 
     for i, row in test.iterrows():
         group = train_group.get_group(row["query"])
-        (closest_title_relevance, weighted_title_relevance) = calculate_nearby_relevance_tuple(group, row, 'product_title')
+        (closest_title_relevance, weighted_title_relevance, weighted_title_relevance_two) = calculate_nearby_relevance_tuple(group, row, 'product_title')
         test.set_value(i, "closest_title_relevance", closest_title_relevance)
         test.set_value(i, "weighted_title_relevance", weighted_title_relevance)
+        test.set_value(i, "weighted_title_relevance_two", weighted_title_relevance_two)
 
-        (closest_description_relevance, weighted_description_relevance) = calculate_nearby_relevance_tuple(group, row, 'product_description')
+        (closest_description_relevance, weighted_description_relevance, weighted_description_relevance_two) = calculate_nearby_relevance_tuple(group, row, 'product_description')
         test.set_value(i, "closest_description_relevance", closest_description_relevance)        
         test.set_value(i, "weighted_description_relevance", weighted_description_relevance)
+        test.set_value(i, "weighted_description_relevance_two", weighted_description_relevance_two)
 
     train["all_words"] = train["query"] + " " + train["product_title"] + " " + train["product_description"]
     test["all_words"] = test["query"] + " " + test["product_title"] + " " + test["product_description"]
