@@ -20,7 +20,7 @@ from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.feature_extraction import text
 
 
-def extract_features(data):
+def extract_features(data, stemmed):
     token_pattern = re.compile(r"(?u)\b\w\w+\b")
     data["query_tokens_in_title"] = 0.0
     data["query_tokens_in_description"] = 0.0
@@ -48,19 +48,16 @@ def extract_features(data):
             exact_query_in_description = 1
         data.set_value(i, "exact_query_in_description", exact_query_in_description)
 
-        #USE BELOW IF USING THE PORTER STEMMER
-        '''
-        translate_to = u''
-        translate_table = dict((ord(char), translate_to) for char in u' -')
-        q_space_removed = row["query"].lower().translate(translate_table)
-        t_space_removed = row["product_title"].lower().translate(translate_table)
-        d_space_removed = row["product_description"].lower().translate(translate_table)
-        '''
-
-        #USE BELOW IF NOT USING THE PORTER STEMMER
-        q_space_removed = row["query"].lower().translate(None, ' -')
-        t_space_removed = row["product_title"].lower().translate(None, ' -')
-        d_space_removed = row["product_description"].lower().translate(None, ' -')
+        if stemmed:
+            translate_to = u''
+            translate_table = dict((ord(char), translate_to) for char in u' -')
+            q_space_removed = row["query"].lower().translate(translate_table)
+            t_space_removed = row["product_title"].lower().translate(translate_table)
+            d_space_removed = row["product_description"].lower().translate(translate_table)
+        if not stemmed:
+            q_space_removed = row["query"].lower().translate(None, ' -')
+            t_space_removed = row["product_title"].lower().translate(None, ' -')
+            d_space_removed = row["product_description"].lower().translate(None, ' -')
 
         if q_space_removed in t_space_removed:
             data.set_value(i, "space_removed_q_in_t", 1)
@@ -92,19 +89,29 @@ def calculate_nearby_relevance_tuple(group, row, col_name):
     TO DO - fix weighted rating - calculate weighted similarity for each possible rating, 
     scale by num comparisons
     '''
-    weighted_rating = 0.0
-    num_similarities = 0
     return_rating = 0
-    min_similarity = 0
+    max_similarity = 0
+    weighted_ratings = {x:[0,0] for x in range(1,5)}
     for i, group_row in group.iterrows():
+        #Weighted ratings takes the form {median relevance value: [number of comparisons with that relevance value, cumulative sum of similarity]}
+        #We ultimately want to return the median relevance value with the highest cumulative_sum/num_comparisons
         if group_row['id'] != row['id']:
             similarity = get_string_similarity(row[col_name], group_row[col_name])
-            num_similarities += 1
-            weighted_rating += group_row['median_relevance'] * similarity
-            if similarity > min_similarity:
-                min_similarity = similarity
+            weighted_ratings[group_row['median_relevance']][0] += 1
+            weighted_ratings[group_row['median_relevance']][1] += similarity
+            if similarity > max_similarity:
+                max_similarity = similarity
                 return_rating = group_row['median_relevance']
-    return (return_rating, weighted_rating/float(num_similarities))
+
+    max_weighted_similarity = 0
+    max_weighted_median_rating = 0
+    for rating in weighted_ratings:
+        if weighted_ratings[rating][0] != 0:
+            current_weighted_similarity = float(weighted_ratings[rating][1])/float(weighted_ratings[rating][0])
+            if current_weighted_similarity > max_weighted_similarity:
+                max_weighted_similarity = current_weighted_similarity
+                max_weighted_median_rating = rating
+    return (return_rating, max_weighted_median_rating)
 
         
 def extract_training_features(train, test):
@@ -170,11 +177,11 @@ def stem_data(data):
 train = pd.read_csv("input/train.csv").fillna("")
 test  = pd.read_csv("input/test.csv").fillna("")
 
-#stem_data(train)
-#stem_data(test)
+stem_data(train)
+stem_data(test)
 
-extract_features(train)
-extract_features(test)
+extract_features(train, stemmed = True)
+extract_features(test, stemmed = True)
 
 #Extract features that can only be extracted on the training set
 extract_training_features(train, test)

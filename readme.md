@@ -6,22 +6,25 @@ When conducting error analysis with KFold - instead of breaking it down into k f
 tables on top of one another to get one big file of the model trained and tested on different
 data.
 
-6/5/2015 - seemt to be getting a lot of false positives - tend to overrate the query results.
+6/5/2015 - seem to be getting a lot of false positives - tend to overrate the query results.
 This probably makes sense, because the overall rating of query results is high, so any mistake
 is probably going to err on the high side. 
+
+TFIDF vectorizer always crashes my computer and tends to fail. In fact, when I run the models without any
+vectorizers (count of TFIDF), I get a better result. Perhaps down the road try TFIDF but running more random
+forest trees through it.
 
 TO DO:
 Add and test features (see below)
 Add comments to your code (so other can undersetand and also so you can understand - your
 code borrows a lot from others)
-Figure out what CountVectorizer does and see if there would be better alternatives
 Adjust cross validation so it always includes a proportionate number of each query
 Incorporate porter stemmer code https://www.kaggle.com/duttaroy/crowdflower-search-relevance/porter-stemmer/run/11533
-Test out TFIDF
-Incorporate SVD transformation to TFIDF output TruncatedSVD(n_components=200, algorithm='randomized', n_iter=5, random_state=None, tol=0.0)
 Incorporate stop words below after getting basic stemming working.
 stop_words = ['http','www','img','border','0','1','2','3','4','5','6','7','8','9','a','the']
 stop_words = text.ENGLISH_STOP_WORDS.union(stop_words)
+Look for algorithms for determining the similarity between two sentences.
+Check out recommender system algorithms that may be of use http://en.wikipedia.org/wiki/Recommender_system
 
 Feature ideas:
 Variance rating in training for that particular query, across all titles and descriptions

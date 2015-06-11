@@ -119,8 +119,7 @@ def ouput_final_model(pipeline, train, test):
     submission.to_csv("python_benchmark.csv", index=False)
 
 #                          Feature Set Name            Data Frame Column              Transformer
-features = FeatureMapper([('QueryAndProductTitle', 'query_and_product_title', TfidfVectorizer(min_df=3,  max_features=None, strip_accents='unicode', analyzer='word',token_pattern=r'\w{1,}',ngram_range=(1, 5), use_idf=1,smooth_idf=1,sublinear_tf=1, stop_words = 'english')),
-                          ('QueryTokensInTitle',       'query_tokens_in_title',       SimpleTransform()),
+features = FeatureMapper([('QueryTokensInTitle',       'query_tokens_in_title',       SimpleTransform()),
                           ('QueryTokensInDescription', 'query_tokens_in_description', SimpleTransform()),
                           ('QueryLength',              'query_length',                SimpleTransform()),
                           ('PQueryTokensInDescription','percent_query_tokens_in_description', SimpleTransform()),
