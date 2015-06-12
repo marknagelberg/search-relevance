@@ -191,16 +191,3 @@ def extract(train, test):
     print "Extracting training/test features"
     extract_training_features(train, test)
 
-train = pd.read_csv("input/train.csv").fillna("")
-test  = pd.read_csv("input/test.csv").fillna("")
-
-extract(train, test)
-
-cPickle.dump(train, open('train_extracted_df.pkl', 'w'))
-cPickle.dump(test, open('test_extracted_df.pkl', 'w'))
-
-train.to_csv("Explore Training Set (With Transformations).csv", index=False)
-test.to_csv("Explore Test Set (With Transformations).csv", index=False)
-
-
-
