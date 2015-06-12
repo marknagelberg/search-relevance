@@ -14,6 +14,9 @@ TFIDF vectorizer always crashes my computer and tends to fail. In fact, when I r
 vectorizers (count of TFIDF), I get a better result. Perhaps down the road try TFIDF but running more random
 forest trees through it.
 
+Performed Stratified K-Fold cross validation, with strata determined by query. Interestingly, this takes almost
+a half hour to run. It's running on 1/3 of the data of the full run so this doesn't really make much sense.
+
 TO DO:
 Add and test features (see below)
 Add comments to your code (so other can undersetand and also so you can understand - your
@@ -25,6 +28,9 @@ stop_words = ['http','www','img','border','0','1','2','3','4','5','6','7','8','9
 stop_words = text.ENGLISH_STOP_WORDS.union(stop_words)
 Look for algorithms for determining the similarity between two sentences.
 Check out recommender system algorithms that may be of use http://en.wikipedia.org/wiki/Recommender_system
+Perhaps consider ensembling with a model that uses bag of words technique
+Figure out why running StratifiedKFold takes almost as long.
+
 
 Feature ideas:
 Variance rating in training for that particular query, across all titles and descriptions

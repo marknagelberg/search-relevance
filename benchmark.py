@@ -86,8 +86,6 @@ def calculate_nearby_relevance_tuple(group, row, col_name):
     "similar" entries. Returns a tuple of calculations. Tuple returns a rating that
     weights similarity across all other rows and returns a rating that is simply the 
     rating of the one "closest" row.
-    TO DO - fix weighted rating - calculate weighted similarity for each possible rating, 
-    scale by num comparisons
     '''
     return_rating = 0
     max_similarity = 0
@@ -123,6 +121,7 @@ def extract_training_features(train, test):
     test["q_median_of_training_relevance"] = 0.0
     test["closest_title_relevance"] = 0
     for i, row in train.iterrows():
+        #Move the two blocks below outside this loop - can make them run much faster.
         group = train_group.get_group(row["query"])
         q_mean = group["median_relevance"].mean()
         train.set_value(i, "q_mean_of_training_relevance", q_mean)
@@ -154,9 +153,6 @@ def extract_training_features(train, test):
         test.set_value(i, "weighted_description_relevance", weighted_description_relevance)
         test.set_value(i, "weighted_description_relevance_two", weighted_description_relevance_two)
 
-    train["all_words"] = train["query"] + " " + train["product_title"] + " " + train["product_description"]
-    test["all_words"] = test["query"] + " " + test["product_title"] + " " + test["product_description"]
-
 
 def stem_data(data):
 
@@ -180,18 +176,25 @@ def stem_data(data):
         data.set_value(i, "product_title", t)
         data.set_value(i, "product_description", d)
 
+def extract(train, test):
+    print "Stemming training data"
+    stem_data(train)
+    print "Stemming test data"
+    stem_data(test)
+
+    print "Extracting training features"
+    extract_features(train, stemmed = True)
+    print "Extracting test features"
+    extract_features(test, stemmed = True)
+
+    #Extract features that can only be extracted on the training set
+    print "Extracting training/test features"
+    extract_training_features(train, test)
 
 train = pd.read_csv("input/train.csv").fillna("")
 test  = pd.read_csv("input/test.csv").fillna("")
 
-stem_data(train)
-stem_data(test)
-
-extract_features(train, stemmed = True)
-extract_features(test, stemmed = True)
-
-#Extract features that can only be extracted on the training set
-extract_training_features(train, test)
+extract(train, test)
 
 cPickle.dump(train, open('train_extracted_df.pkl', 'w'))
 cPickle.dump(test, open('test_extracted_df.pkl', 'w'))

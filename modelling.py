@@ -7,7 +7,7 @@ from sklearn.feature_extraction.text import CountVectorizer
 from sklearn.pipeline import Pipeline
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.naive_bayes import GaussianNB
-from sklearn.cross_validation import KFold
+from sklearn.cross_validation import KFold, StratifiedKFold
 import evaluation
 import cPickle
 #Imports taken from the porter stemmer code https://www.kaggle.com/duttaroy/crowdflower-search-relevance/porter-stemmer/run/11533
@@ -18,6 +18,7 @@ from sklearn.preprocessing import StandardScaler
 from sklearn.svm import SVC
 from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.feature_extraction import text
+import benchmark
 
 #The first version of this script was taken from
 #https://www.kaggle.com/users/993/ben-hamner/crowdflower-search-relevance/python-benchmark
@@ -78,16 +79,29 @@ class SimpleTransform(BaseEstimator):
 #and output a matrix that can be used to conduct
 #error analysis.
 def perform_cross_validation(pipeline, train):
-    kf = KFold(len(train), n_folds=5)
+    kf = StratifiedKFold(train["query"], n_folds=5)
     score_count = 0
     score_total = 0.0
-    frames = []
+    #frames = []
     for train_index, test_index in kf:
         X_train = train.loc[train_index]
         y_train = train.loc[train_index,"median_relevance"]
+
         X_test = train.loc[test_index]
         y_test = train.loc[test_index, "median_relevance"]
         y_test = y_test.loc[test_index]
+
+        #Add/extract new variables to train and test
+        benchmark.extract(X_train, X_test)
+
+        cPickle.dump(X_train, open('train_extracted_df_StratifiedKFold.pkl', 'w'))
+        cPickle.dump(X_test, open('test_extracted_df_StratifiedKFold.pkl', 'w'))
+
+        #Drop variables in X_train that we don't want to use in training
+        X_train.drop('median_relevance', 1)
+        X_train.drop('id', 1)
+
+        #Fit the model
         pipeline.fit(X_train, y_train)
         predictions = pipeline.predict(X_test)
         score_count += 1
@@ -98,12 +112,10 @@ def perform_cross_validation(pipeline, train):
         X_test["median_relevance_pred"] = predictions
         X_test["(i-j)^2"] = [(row["median_relevance"] - row["median_relevance_pred"])**2 for idx, row in X_test.loc[:, ("median_relevance","median_relevance_pred")].iterrows()]
         X_test["i-j"] = [row["median_relevance"] - row["median_relevance_pred"] for idx, row in X_test.loc[:, ("median_relevance","median_relevance_pred")].iterrows()]
-        
-        filename = "Error Analysis Iteration " + str(score_count) + ".csv"
-
+        filename = "StratifiedKFold Test Set Iteration " + str(score_count) + ".csv"
         X_test.to_csv(filename, index=False)
-        frames.append(X_test)
-    pd.concat(frames).to_csv("Master Error Analysis File.csv", index=False)
+
+        break
         
     average_score = score_total/float(score_count)
     print "Average score: " + str(average_score) 
@@ -111,12 +123,15 @@ def perform_cross_validation(pipeline, train):
 
 
 def ouput_final_model(pipeline, train, test):
-    pipeline.fit(train, train["median_relevance"])
+  y = train["median_relevance"]
+  train.drop('median_relevance', 1)
+  train.drop('id', 1)
+  pipeline.fit(train, y)
 
-    predictions = pipeline.predict(test)
+  predictions = pipeline.predict(test)
 
-    submission = pd.DataFrame({"id": test["id"], "prediction": predictions})
-    submission.to_csv("python_benchmark.csv", index=False)
+  submission = pd.DataFrame({"id": test["id"], "prediction": predictions})
+  submission.to_csv("python_benchmark.csv", index=False)
 
 #                          Feature Set Name            Data Frame Column              Transformer
 features = FeatureMapper([('QueryTokensInTitle',       'query_tokens_in_title',       SimpleTransform()),
@@ -145,14 +160,11 @@ pipeline = Pipeline([("extract_features", features),
                                                          min_samples_split=2,
                                                          random_state=1))])
 
-train = cPickle.load(open('train_extracted_df.pkl', 'r'))
-test = cPickle.load(open('test_extracted_df.pkl', 'r'))
+#train = cPickle.load(open('train_extracted_df.pkl', 'r'))
+#test = cPickle.load(open('test_extracted_df.pkl', 'r'))
 
-#Move to extraction area if this works
-train["query_and_product_title"] = train["query"] + " " + train["product_title"]
-test["query_and_product_title"] = test["query"] + " " + test["product_title"]
-
-#perform_cross_validation(pipeline, train)
-ouput_final_model(pipeline = pipeline, train = train, test = test)
+train = pd.read_csv("input/train.csv").fillna("")
+perform_cross_validation(pipeline, train)
+#ouput_final_model(pipeline = pipeline, train = train, test = test)
 
 #Need to develop an internal, quick cross validation framework for testing the models
