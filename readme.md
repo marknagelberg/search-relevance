@@ -22,10 +22,6 @@ Add and test features (see below)
 Add comments to your code (so other can undersetand and also so you can understand - your
 code borrows a lot from others)
 Adjust cross validation so it always includes a proportionate number of each query
-Incorporate porter stemmer code https://www.kaggle.com/duttaroy/crowdflower-search-relevance/porter-stemmer/run/11533
-Incorporate stop words below after getting basic stemming working.
-stop_words = ['http','www','img','border','0','1','2','3','4','5','6','7','8','9','a','the']
-stop_words = text.ENGLISH_STOP_WORDS.union(stop_words)
 Look for algorithms for determining the similarity between two sentences.
 Check out recommender system algorithms that may be of use http://en.wikipedia.org/wiki/Recommender_system
 Perhaps consider ensembling with a model that uses bag of words technique. Look up ensembling methods - 

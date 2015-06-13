@@ -79,6 +79,23 @@ def get_string_similarity(s1, s2):
     else:
         return float(len(s1_tokens.intersection(s2_tokens)))/float(len(s1_tokens.union(s2_tokens)))
 
+def get_n_grams(s, n):
+    '''
+    Takes in a string and the degree of n gram n and returns a list of all the
+    n grams in the string. String is separated by space.
+    '''
+    word_list = s.split()
+    n_grams = []
+
+
+    if n > len(word_list):
+        return []
+    
+    for i, word in enumerate(word_list):
+        n_gram = word_list[i:i+n]
+        if len(n_gram) == n:
+            n_grams.append(tuple(n_gram))
+    return n_grams
 
 def calculate_nearby_relevance_tuple(group, row, col_name):
     '''
@@ -169,9 +186,9 @@ def stem_data(data):
         t=re.sub("[^a-zA-Z0-9]"," ", t)
         d=re.sub("[^a-zA-Z0-9]"," ", d)
 
-        q= (" ").join([stemmer.stem(z) for z in q.split(" ")])
-        t= (" ").join([stemmer.stem(z) for z in t.split(" ")])
-        d= (" ").join([stemmer.stem(z) for z in d.split(" ")])
+        q= (" ").join([stemmer.stem(z) for z in q.split()])
+        t= (" ").join([stemmer.stem(z) for z in t.split()])
+        d= (" ").join([stemmer.stem(z) for z in d.split()])
         
         data.set_value(i, "query", q)
         data.set_value(i, "product_title", t)
@@ -181,7 +198,7 @@ def remove_stop_words(data):
     stop = stopwords.words('english')
 
     for i, row in data.iterrows():
-        
+
         q = row["query"].lower().split(" ")
         t = row["product_title"].lower().split(" ")
         d = row["product_description"].lower().split(" ")

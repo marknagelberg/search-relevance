@@ -124,6 +124,9 @@ def perform_cross_validation(pipeline, train):
 
 
 def ouput_final_model(pipeline, train, test):
+  benchmark.extract(train, test)
+  train.to_csv("Explore Train Set (With Transformations).csv", index=False)
+  test.to_csv("Explore Test Set (With Transformations).csv", index=False)
   y = train["median_relevance"]
   train.drop('median_relevance', 1)
   train.drop('id', 1)
@@ -165,7 +168,6 @@ pipeline = Pipeline([("extract_features", features),
 #test = cPickle.load(open('test_extracted_df.pkl', 'r'))
 
 train = pd.read_csv("input/train.csv").fillna("")
-perform_cross_validation(pipeline, train)
-#ouput_final_model(pipeline = pipeline, train = train, test = test)
-
-#Need to develop an internal, quick cross validation framework for testing the models
+test = pd.read_csv("input/test.csv").fillna("")
+#perform_cross_validation(pipeline, train)
+ouput_final_model(pipeline = pipeline, train = train, test = test)
