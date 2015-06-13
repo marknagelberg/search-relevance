@@ -154,7 +154,9 @@ features = FeatureMapper([('QueryTokensInTitle',       'query_tokens_in_title', 
                           ('WeightedTitleRelevance',   'weighted_title_relevance',    SimpleTransform()),
                           ('WeightedDescriptionRelevance', 'weighted_description_relevance', SimpleTransform()),
                           ('WeightedDescriptionRelevanceTwo', 'weighted_description_relevance_two', SimpleTransform()),
-                          ('WeightedTitleRelevanceTwo', 'weighted_title_relevance_two', SimpleTransform())])
+                          ('WeightedTitleRelevanceTwo', 'weighted_title_relevance_two', SimpleTransform()),
+                          ('TwoGramsInQandT',           'two_grams_in_q_and_t', SimpleTransform()),
+                          ('TwoGramsInQandD',           'two_grams_in_q_and_d', SimpleTransform())])
 
 
 # note - removed ('svd', TruncatedSVD(n_components=225, algorithm='randomized', n_iter=5, random_state=None, tol=0.0)) from below
@@ -168,6 +170,6 @@ pipeline = Pipeline([("extract_features", features),
 #test = cPickle.load(open('test_extracted_df.pkl', 'r'))
 
 train = pd.read_csv("input/train.csv").fillna("")
-test = pd.read_csv("input/test.csv").fillna("")
-#perform_cross_validation(pipeline, train)
-ouput_final_model(pipeline = pipeline, train = train, test = test)
+#test = pd.read_csv("input/test.csv").fillna("")
+perform_cross_validation(pipeline, train)
+#ouput_final_model(pipeline = pipeline, train = train, test = test)

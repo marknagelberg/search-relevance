@@ -70,6 +70,13 @@ def extract_features(data, stemmed):
         else:
             data.set_value(i, "space_removed_q_in_d", 0)
 
+        two_grams_in_query = set(get_n_grams(row["query"], 2))
+        two_grams_in_title = set(get_n_grams(row["product_title"], 2))
+        two_grams_in_description = set(get_n_grams(row["product_description"], 2))
+
+        data.set_value(i, "two_grams_in_q_and_t", len(two_grams_in_query.intersection(two_grams_in_title)))
+        data.set_value(i, "two_grams_in_q_and_d", len(two_grams_in_query.intersection(two_grams_in_description)))
+
 def get_string_similarity(s1, s2):
     token_pattern = re.compile(r"(?u)\b\w\w+\b")
     s1_tokens = set(x.lower() for x in token_pattern.findall(s1))
@@ -190,9 +197,9 @@ def stem_data(data):
         t= (" ").join([stemmer.stem(z) for z in t.split()])
         d= (" ").join([stemmer.stem(z) for z in d.split()])
         
-        data.set_value(i, "query", q)
-        data.set_value(i, "product_title", t)
-        data.set_value(i, "product_description", d)
+        data.set_value(i, "query", unicode(q))
+        data.set_value(i, "product_title", unicode(t))
+        data.set_value(i, "product_description", unicode(d))
 
 def remove_stop_words(data):
     stop = stopwords.words('english')
