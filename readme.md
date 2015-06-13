@@ -124,4 +124,84 @@ Score with weighted_title_relevance_two removed: 0.617787075129
 Score with two_grams_in_q_and_t removed: 0.644978566096
 Score with two_grams_in_q_and_d removed: 0.642201981003
 
-query_tokens_in_description, percent_query_tokens_in_description
+After removing query_tokens_in_description, percent_query_tokens_in_description
+and adding 2gram similarity measures, got the following:
+
+Score: 0.647889581076
+Score with query_tokens_in_title removed: 0.645025037265
+Score with query_length removed: 0.646184124407
+Score with percent_query_tokens_in_title removed: 0.639125677917
+Score with exact_query_in_title removed: 0.653587069391
+Score with exact_query_in_description removed: 0.643095452699
+Score with space_removed_q_in_t removed: 0.657651373962
+Score with space_removed_q_in_d removed: 0.648367126302
+Score with q_mean_of_training_relevance removed: 0.636816444027
+Score with q_median_of_training_relevance removed: 0.647789248918
+Score with closest_title_relevance removed: 0.655143239957
+Score with closest_2gram_title_relevance removed: 0.643381494965
+Score with closest_description_relevance removed: 0.645581181561
+Score with closest_2gram_description_relevance removed: 0.646222266638
+Score with weighted_title_relevance removed: 0.632236478738
+Score with weighted_2gram_title_relevance removed: 0.65008212439
+Score with weighted_description_relevance removed: 0.65184426758
+Score with weighted_2gram_description_relevance removed: 0.643231180018
+Score with weighted_description_relevance_two removed: 0.632722504888
+Score with weighted_2gram_description_relevance_two removed: 0.64777286743
+Score with weighted_title_relevance_two removed: 0.635804803525
+Score with weighted_2gram_title_relevance_two removed: 0.643532450041
+Score with two_grams_in_q_and_t removed: 0.646731827421
+Score with two_grams_in_q_and_d removed: 0.64879745359
+
+Got the following running the same as above using AdaBoost:
+Score: 0.624407669816
+Score with query_tokens_in_title removed: 0.624008310817
+Score with query_length removed: 0.611598175913
+Score with percent_query_tokens_in_title removed: 0.623004140411
+Score with exact_query_in_title removed: 0.624407669816
+Score with exact_query_in_description removed: 0.624407669816
+Score with space_removed_q_in_t removed: 0.624407669816
+Score with space_removed_q_in_d removed: 0.620414704021
+Score with q_mean_of_training_relevance removed: 0.623470527086
+Score with q_median_of_training_relevance removed: 0.622687478923
+Score with closest_title_relevance removed: 0.626723458965
+Score with closest_2gram_title_relevance removed: 0.610126837778
+Score with closest_description_relevance removed: 0.618875244505
+Score with closest_2gram_description_relevance removed: 0.621458727383
+Score with weighted_title_relevance removed: 0.625559162612
+Score with weighted_2gram_title_relevance removed: 0.624407669816
+Score with weighted_description_relevance removed: 0.624407669816
+Score with weighted_2gram_description_relevance removed: 0.624407669816
+Score with weighted_description_relevance_two removed: 0.619711419199
+Score with weighted_2gram_description_relevance_two removed: 0.624407669816
+Score with weighted_title_relevance_two removed: 0.629721499609
+Score with weighted_2gram_title_relevance_two removed: 0.624407669816
+Score with two_grams_in_q_and_t removed: 0.624893067111
+Score with two_grams_in_q_and_d removed: 0.619573224356
+
+Following from same as above using SVC with scaling
+
+Score: 0.636031415371
+Score with query_tokens_in_title removed: 0.634789651152
+Score with query_length removed: 0.637833433663
+Score with percent_query_tokens_in_title removed: 0.63735259409
+Score with exact_query_in_title removed: 0.63727176659
+Score with exact_query_in_description removed: 0.628805037119
+Score with space_removed_q_in_t removed: 0.634760807479
+Score with space_removed_q_in_d removed: 0.631442294622
+Score with q_mean_of_training_relevance removed: 0.617972257481
+Score with q_median_of_training_relevance removed: 0.63851201616
+Score with closest_title_relevance removed: 0.626325183563
+Score with closest_2gram_title_relevance removed: 0.621909925799
+Score with closest_description_relevance removed: 0.623897495514
+Score with closest_2gram_description_relevance removed: 0.636440402046
+Score with weighted_title_relevance removed: 0.614831050879
+Score with weighted_2gram_title_relevance removed: 0.630909883639
+Score with weighted_description_relevance removed: 0.629869466186
+Score with weighted_2gram_description_relevance removed: 0.630909883639
+Score with weighted_description_relevance_two removed: 0.622480254803
+Score with weighted_2gram_description_relevance_two removed: 0.630909883639
+Score with weighted_title_relevance_two removed: 0.63236990647
+Score with weighted_2gram_title_relevance_two removed: 0.630909883639
+Score with two_grams_in_q_and_t removed: 0.639234955175
+Score with two_grams_in_q_and_d removed: 0.623194505726
+[Finished in 204.9s]

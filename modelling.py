@@ -6,6 +6,7 @@ from sklearn.base import BaseEstimator
 from sklearn.feature_extraction.text import CountVectorizer
 from sklearn.pipeline import Pipeline
 from sklearn.ensemble import RandomForestClassifier
+from sklearn.ensemble import AdaBoostClassifier
 from sklearn.naive_bayes import GaussianNB
 from sklearn.cross_validation import KFold, StratifiedKFold
 import evaluation
@@ -19,6 +20,7 @@ from sklearn.svm import SVC
 from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.feature_extraction import text
 import benchmark
+import math
 
 #The first version of this script was taken from
 #https://www.kaggle.com/users/993/ben-hamner/crowdflower-search-relevance/python-benchmark
@@ -141,6 +143,9 @@ def ouput_final_model(pipeline, train, test):
   benchmark.extract(train, test)
   train.to_csv("Explore Train Set (With Transformations).csv", index=False)
   test.to_csv("Explore Test Set (With Transformations).csv", index=False)
+  cPickle.dump(train, open('train_extracted_df.pkl', 'w'))
+  cPickle.dump(test, open('test_extracted_df.pkl', 'w'))  
+
   y = train["median_relevance"]
   train.drop('median_relevance', 1)
   train.drop('id', 1)
@@ -177,52 +182,82 @@ features = FeatureMapper([('QueryTokensInTitle',       'query_tokens_in_title', 
                           ('TwoGramsInQandD',           'two_grams_in_q_and_d', SimpleTransform())])
 
 
-# note - removed ('svd', TruncatedSVD(n_components=225, algorithm='randomized', n_iter=5, random_state=None, tol=0.0)) from below
+
+
+#train = cPickle.load(open('train_extracted_df.pkl', 'r'))
+#test = cPickle.load(open('test_extracted_df.pkl', 'r'))
+
+train = pd.read_csv("input/train.csv").fillna("")
+test = pd.read_csv("input/test.csv").fillna("")
+#perform_cross_validation(pipeline, train)
+
+#Use the code below if you want to test models on StratifiedKFold sample without
+#having to extract new features every time.
+#train = cPickle.load(open('train_extracted_df_StratifiedKFold.pkl', 'r'))
+#test = cPickle.load(open('test_extracted_df_StratifiedKFold.pkl', 'r'))
+
+
+
+benchmark.extract(train, test)
+train.to_csv("Explore Train Set (With Transformations).csv", index=False)
+test.to_csv("Explore Test Set (With Transformations).csv", index=False)
+cPickle.dump(train, open('train_extracted_df.pkl', 'w'))
+cPickle.dump(test, open('test_extracted_df.pkl', 'w'))  
+
+y_train = train["median_relevance"]
+#y_test = test["median_relevance"]
+
 pipeline = Pipeline([("extract_features", features),
                      ("classify", RandomForestClassifier(n_estimators=300,
                                                          n_jobs=1,
                                                          min_samples_split=2,
                                                          random_state=1))])
+pipeline.fit(train, y_train)
+rf_predictions = pipeline.predict(test)
 
-#train = cPickle.load(open('train_extracted_df.pkl', 'r'))
-#test = cPickle.load(open('test_extracted_df.pkl', 'r'))
+# Initialize the standard scaler 
+scl = StandardScaler()
+# We will use SVM here..
+svm_model = SVC(C=10.0)
+# Create the pipeline  
+pipeline = Pipeline([("extract_features", features), ('scl', scl), ('svm', svm_model)])
+pipeline.fit(train, y_train)
+svc_predictions = pipeline.predict(test)
 
-#train = pd.read_csv("input/train.csv").fillna("")
-#test = pd.read_csv("input/test.csv").fillna("")
-#perform_cross_validation(pipeline, train)
+
+pipeline = Pipeline([("extract_features", features),
+                     ("classify", AdaBoostClassifier(n_estimators=100))])
+pipeline.fit(train, y_train)
+adaboost_predictions = pipeline.predict(test)
+
 #ouput_final_model(pipeline = pipeline, train = train, test = test)
 
 
-#Use the code below if you want to test models on StratifiedKFold sample without
-#having to extract new features every time.
+#Develop a framework for testing different weightings of model results
+predictions = (rf_predictions + svc_predictions + adaboost_predictions)/3.0
 
-train = cPickle.load(open('train_extracted_df_StratifiedKFold.pkl', 'r'))
-test = cPickle.load(open('test_extracted_df_StratifiedKFold.pkl', 'r'))
-y_train = train["median_relevance"]
-y_test = test["median_relevance"]
+#Try rounding rather than floor function
+predictions = [int(math.floor(p)) for p in predictions]
+#score = evaluation.quadratic_weighted_kappa(y = y_test, y_pred = predictions)
+#print "Score: " + str(score)
 
-#Fit baseline model
-pipeline.fit(train, y_train)
-predictions = pipeline.predict(test)
-score = evaluation.quadratic_weighted_kappa(y = y_test, y_pred = predictions)
-print "Score: " + str(score)
+submission = pd.DataFrame({"id": test["id"], "prediction": predictions})
+submission.to_csv("python_benchmark.csv", index=False)
 
-
+'''
 #Test removing each variable to see how score changes
 for col_name in features.get_column_names():
 
   new_features = features.remove([col_name])
 
-  pipeline = Pipeline([("extract_features", new_features),
-                       ("classify", RandomForestClassifier(n_estimators=300,
-                                                           n_jobs=1,
-                                                           min_samples_split=2,
-                                                           random_state=1))])
+  #pipeline = Pipeline([("extract_features", new_features), ("classify", AdaBoostClassifier(n_estimators=100))])
 
-  
+  pipeline = Pipeline([("extract_features", new_features), ('scl', scl), ('svm', svm_model)])
+
 
   #Fit the model
   pipeline.fit(train, y_train)
   predictions = pipeline.predict(test)
   score = evaluation.quadratic_weighted_kappa(y = y_test, y_pred = predictions)
   print "Score with " + col_name + " removed: " + str(score)
+'''
