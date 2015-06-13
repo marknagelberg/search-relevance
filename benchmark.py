@@ -1,4 +1,5 @@
 import nltk
+from nltk.corpus import stopwords
 import numpy as np
 import pandas as pd
 import re
@@ -160,7 +161,7 @@ def stem_data(data):
 
     for i, row in data.iterrows():
 
-        q=(" ").join([z for z in BeautifulSoup(row["query"]).get_text(" ").split(" ")])
+        q = (" ").join([z for z in BeautifulSoup(row["query"]).get_text(" ").split(" ")])
         t = (" ").join([z for z in BeautifulSoup(row["product_title"]).get_text(" ").split(" ")]) 
         d = (" ").join([z for z in BeautifulSoup(row["product_description"]).get_text(" ").split(" ")])
 
@@ -176,7 +177,30 @@ def stem_data(data):
         data.set_value(i, "product_title", t)
         data.set_value(i, "product_description", d)
 
+def remove_stop_words(data):
+    stop = stopwords.words('english')
+
+    for i, row in data.iterrows():
+        
+        q = row["query"].lower().split(" ")
+        t = row["product_title"].lower().split(" ")
+        d = row["product_description"].lower().split(" ")
+
+        q = (" ").join([z for z in q if z not in stop])
+        t = (" ").join([z for z in t if z not in stop])
+        d = (" ").join([z for z in d if z not in stop])
+
+        data.set_value(i, "query", q)
+        data.set_value(i, "product_title", t)
+        data.set_value(i, "product_description", d)
+
 def extract(train, test):
+
+    print "Removing stop words in training data"
+    remove_stop_words(train)
+    print "Removing stop words in test data"
+    remove_stop_words(test)
+
     print "Stemming training data"
     stem_data(train)
     print "Stemming test data"

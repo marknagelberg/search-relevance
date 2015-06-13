@@ -119,6 +119,7 @@ def perform_cross_validation(pipeline, train):
         
     average_score = score_total/float(score_count)
     print "Average score: " + str(average_score) 
+    return (X_train, y_train)
 
 
 
