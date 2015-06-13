@@ -162,11 +162,17 @@ features = FeatureMapper([('QueryTokensInTitle',       'query_tokens_in_title', 
                           ('QMeanTrainingRelevance',   'q_mean_of_training_relevance',SimpleTransform()),
                           ('QMedianTrainingRelevance', 'q_median_of_training_relevance',SimpleTransform()),
                           ('ClosestTitleRelevance',    'closest_title_relevance',     SimpleTransform()),
+                          ('Closest2GramTitleRelevance',    'closest_2gram_title_relevance',     SimpleTransform()),
                           ('ClosestDescriptionRelevance', 'closest_description_relevance', SimpleTransform()),
+                          ('Closest2GramDescriptionRelevance', 'closest_2gram_description_relevance', SimpleTransform()),
                           ('WeightedTitleRelevance',   'weighted_title_relevance',    SimpleTransform()),
+                          ('Weighted2GramTitleRelevance',   'weighted_2gram_title_relevance',    SimpleTransform()),
                           ('WeightedDescriptionRelevance', 'weighted_description_relevance', SimpleTransform()),
+                          ('Weighted2GramDescriptionRelevance', 'weighted_2gram_description_relevance', SimpleTransform()),
                           ('WeightedDescriptionRelevanceTwo', 'weighted_description_relevance_two', SimpleTransform()),
+                          ('Weighted2GramDescriptionRelevanceTwo', 'weighted_2gram_description_relevance_two', SimpleTransform()),
                           ('WeightedTitleRelevanceTwo', 'weighted_title_relevance_two', SimpleTransform()),
+                          ('Weighted2GramTitleRelevanceTwo', 'weighted_2gram_title_relevance_two', SimpleTransform()),
                           ('TwoGramsInQandT',           'two_grams_in_q_and_t', SimpleTransform()),
                           ('TwoGramsInQandD',           'two_grams_in_q_and_d', SimpleTransform())])
 
@@ -201,7 +207,7 @@ predictions = pipeline.predict(test)
 score = evaluation.quadratic_weighted_kappa(y = y_test, y_pred = predictions)
 print "Score: " + str(score)
 
-'''
+
 #Test removing each variable to see how score changes
 for col_name in features.get_column_names():
 
@@ -220,4 +226,3 @@ for col_name in features.get_column_names():
   predictions = pipeline.predict(test)
   score = evaluation.quadratic_weighted_kappa(y = y_test, y_pred = predictions)
   print "Score with " + col_name + " removed: " + str(score)
-'''

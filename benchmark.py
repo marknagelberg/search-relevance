@@ -86,6 +86,14 @@ def get_string_similarity(s1, s2):
     else:
         return float(len(s1_tokens.intersection(s2_tokens)))/float(len(s1_tokens.union(s2_tokens)))
 
+def get_n_gram_string_similarity(s1, s2, n):
+    s1 = set(get_n_grams(s1, n))
+    s2 = set(get_n_grams(s2, n))
+    if len(s1.union(s2)) == 0:
+        return 0
+    else:
+        return float(len(s1.intersection(s2)))/float(len(s1.union(s2)))
+
 def get_n_grams(s, n):
     '''
     Takes in a string and the degree of n gram n and returns a list of all the
@@ -113,18 +121,28 @@ def calculate_nearby_relevance_tuple(group, row, col_name):
     rating of the one "closest" row.
     '''
     return_rating = 0
+    return_2gram_rating = 0
     max_similarity = 0
+    max_2gram_similarity = 0
     weighted_ratings = {x:[0,0] for x in range(1,5)}
+    weighted_2gram_ratings = {x:[0,0] for x in range(1,5)}
     for i, group_row in group.iterrows():
         #Weighted ratings takes the form {median relevance value: [number of comparisons with that relevance value, cumulative sum of similarity]}
         #We ultimately want to return the median relevance value with the highest cumulative_sum/num_comparisons
         if group_row['id'] != row['id']:
             similarity = get_string_similarity(row[col_name], group_row[col_name])
+            twogram_similarity = get_n_gram_string_similarity(row[col_name], group_row[col_name], 2)
             weighted_ratings[group_row['median_relevance']][0] += 1
+            weighted_2gram_ratings[group_row['median_relevance']][0] += 1
             weighted_ratings[group_row['median_relevance']][1] += similarity
+            weighted_2gram_ratings[group_row['median_relevance']][0] += twogram_similarity
             if similarity > max_similarity:
                 max_similarity = similarity
                 return_rating = group_row['median_relevance']
+            if twogram_similarity > max_2gram_similarity:
+                max_2gram_similarity = twogram_similarity
+                return_2gram_rating = group_row['median_relevance']
+
 
     max_weighted_similarity = 0
     max_weighted_median_rating = 0
@@ -135,9 +153,20 @@ def calculate_nearby_relevance_tuple(group, row, col_name):
                 max_weighted_similarity = current_weighted_similarity
                 max_weighted_median_rating = rating
 
-
     weighted_median_rating = float(sum(x * weighted_ratings[x][1] for x in weighted_ratings))/float(sum(weighted_ratings[x][0] for x in weighted_ratings))
-    return (return_rating, max_weighted_median_rating, weighted_median_rating)
+
+    max_weighted_2gram_similarity = 0
+    max_weighted_2gram_median_rating = 0
+    for rating in weighted_2gram_ratings:
+        if weighted_2gram_ratings[rating][0] != 0:
+            current_weighted_2gram_similarity = float(weighted_2gram_ratings[rating][1])/float(weighted_2gram_ratings[rating][0])
+            if current_weighted_2gram_similarity > max_weighted_2gram_similarity:
+                max_weighted_2gram_similarity = current_weighted_2gram_similarity
+                max_weighted_2gram_median_rating = rating
+
+    weighted_2gram_median_rating = float(sum(x * weighted_2gram_ratings[x][1] for x in weighted_2gram_ratings))/float(sum(weighted_2gram_ratings[x][0] for x in weighted_2gram_ratings))
+
+    return (return_rating, max_weighted_median_rating, weighted_median_rating, return_2gram_rating, max_weighted_2gram_similarity, weighted_2gram_median_rating)
 
         
 def extract_training_features(train, test):
@@ -145,6 +174,9 @@ def extract_training_features(train, test):
     test["q_mean_of_training_relevance"] = 0.0
     test["q_median_of_training_relevance"] = 0.0
     test["closest_title_relevance"] = 0
+    test["closest_description_relevance"] = 0
+    test["closest_2gram_title_relevance"] = 0
+    test["closest_2gram_description_relevance"] = 0
     for i, row in train.iterrows():
         #Move the two blocks below outside this loop - can make them run much faster.
         group = train_group.get_group(row["query"])
@@ -156,28 +188,39 @@ def extract_training_features(train, test):
         train.set_value(i, "q_median_of_training_relevance", q_median)
         test.loc[test["query"] == row["query"], "q_median_of_training_relevance"] = q_median
 
-        (closest_title_relevance, weighted_title_relevance, weighted_title_relevance_two) = calculate_nearby_relevance_tuple(group, row, 'product_title')
+        (closest_title_relevance, weighted_title_relevance, weighted_title_relevance_two, closest_2gram_title_relevance, weighted_2gram_title_relevance, weighted_2gram_title_relevance_two) = calculate_nearby_relevance_tuple(group, row, 'product_title')
         train.set_value(i, "closest_title_relevance", closest_title_relevance)
         train.set_value(i, "weighted_title_relevance", weighted_title_relevance)
         train.set_value(i, "weighted_title_relevance_two", weighted_title_relevance_two)
+        train.set_value(i, "closest_2gram_title_relevance", closest_2gram_title_relevance)
+        train.set_value(i, "weighted_2gram_title_relevance", weighted_2gram_title_relevance)
+        train.set_value(i, "weighted_2gram_title_relevance_two", weighted_2gram_title_relevance_two)
 
-        (closest_description_relevance, weighted_description_relevance, weighted_description_relevance_two) = calculate_nearby_relevance_tuple(group, row, 'product_description')
+        (closest_description_relevance, weighted_description_relevance, weighted_description_relevance_two, closest_2gram_description_relevance, weighted_2gram_description_relevance, weighted_2gram_description_relevance_two) = calculate_nearby_relevance_tuple(group, row, 'product_description')
         train.set_value(i, "closest_description_relevance", closest_description_relevance)
         train.set_value(i, "weighted_description_relevance", weighted_description_relevance)
         train.set_value(i, "weighted_description_relevance_two", weighted_description_relevance_two)
+        train.set_value(i, "closest_2gram_description_relevance", closest_2gram_description_relevance)
+        train.set_value(i, "weighted_2gram_description_relevance", weighted_2gram_description_relevance)
+        train.set_value(i, "weighted_2gram_description_relevance_two", weighted_2gram_description_relevance_two)
 
     for i, row in test.iterrows():
         group = train_group.get_group(row["query"])
-        (closest_title_relevance, weighted_title_relevance, weighted_title_relevance_two) = calculate_nearby_relevance_tuple(group, row, 'product_title')
+        (closest_title_relevance, weighted_title_relevance, weighted_title_relevance_two, closest_2gram_title_relevance, weighted_2gram_title_relevance, weighted_2gram_title_relevance_two) = calculate_nearby_relevance_tuple(group, row, 'product_title')
         test.set_value(i, "closest_title_relevance", closest_title_relevance)
         test.set_value(i, "weighted_title_relevance", weighted_title_relevance)
         test.set_value(i, "weighted_title_relevance_two", weighted_title_relevance_two)
+        test.set_value(i, "closest_2gram_title_relevance", closest_2gram_title_relevance)
+        test.set_value(i, "weighted_2gram_title_relevance", weighted_2gram_title_relevance)
+        test.set_value(i, "weighted_2gram_title_relevance_two", weighted_2gram_title_relevance_two)
 
-        (closest_description_relevance, weighted_description_relevance, weighted_description_relevance_two) = calculate_nearby_relevance_tuple(group, row, 'product_description')
+        (closest_description_relevance, weighted_description_relevance, weighted_description_relevance_two, closest_2gram_description_relevance, weighted_2gram_description_relevance, weighted_2gram_description_relevance_two) = calculate_nearby_relevance_tuple(group, row, 'product_description')
         test.set_value(i, "closest_description_relevance", closest_description_relevance)        
         test.set_value(i, "weighted_description_relevance", weighted_description_relevance)
         test.set_value(i, "weighted_description_relevance_two", weighted_description_relevance_two)
-
+        test.set_value(i, "closest_2gram_description_relevance", closest_2gram_description_relevance)        
+        test.set_value(i, "weighted_2gram_description_relevance", weighted_2gram_description_relevance)
+        test.set_value(i, "weighted_2gram_description_relevance_two", weighted_2gram_description_relevance_two)
 
 def stem_data(data):
 
