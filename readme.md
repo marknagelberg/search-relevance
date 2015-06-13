@@ -14,9 +14,6 @@ TFIDF vectorizer always crashes my computer and tends to fail. In fact, when I r
 vectorizers (count of TFIDF), I get a better result. Perhaps down the road try TFIDF but running more random
 forest trees through it.
 
-Performed Stratified K-Fold cross validation, with strata determined by query. Interestingly, this takes almost
-a half hour to run. It's running on 1/3 of the data of the full run so this doesn't really make much sense.
-
 TO DO:
 Add and test features (see below)
 Add comments to your code (so other can undersetand and also so you can understand - your
@@ -60,3 +57,71 @@ has results with "Spider-man"
 Are there repeated query/title combinations? If so, it seems that any time we encounter a known query/title combination
 in test set, we should just assign it the rating seen already. Check to see whether this is the case and also check
 the variation in ratings among common query/title combos.
+
+Got the following results to test what happens when leaving out variables:
+Score: 0.643129109937
+Score with query_tokens_in_title removed: 0.63171127765
+Score with query_tokens_in_description removed: 0.637368418749
+Score with query_length removed: 0.639903085722
+Score with percent_query_tokens_in_description removed: 0.635497898503
+Score with percent_query_tokens_in_title removed: 0.634468060064
+Score with exact_query_in_title removed: 0.639227453057
+Score with exact_query_in_description removed: 0.633615569655
+Score with space_removed_q_in_t removed: 0.639006304509
+Score with space_removed_q_in_d removed: 0.637813906525
+Score with q_mean_of_training_relevance removed: 0.642376944202
+Score with q_median_of_training_relevance removed: 0.639869449157
+Score with closest_title_relevance removed: 0.642020054147
+Score with closest_description_relevance removed: 0.638538444249
+Score with weighted_title_relevance removed: 0.631477073537
+Score with weighted_description_relevance removed: 0.64144060066
+Score with weighted_description_relevance_two removed: 0.625971007429
+Score with weighted_title_relevance_two removed: 0.612785990654
+Score with two_grams_in_q_and_t removed: 0.636179408066
+Score with two_grams_in_q_and_d removed: 0.639781626616
+
+Ran it a get increasing the n_estimators from 200 to 300
+Score: 0.64339148288
+Score with query_tokens_in_title removed: 0.628861951478
+Score with query_tokens_in_description removed: 0.644904717005
+Score with query_length removed: 0.640712919403
+Score with percent_query_tokens_in_description removed: 0.64365615009
+Score with percent_query_tokens_in_title removed: 0.641225123491
+Score with exact_query_in_title removed: 0.637028267544
+Score with exact_query_in_description removed: 0.632414963298
+Score with space_removed_q_in_t removed: 0.644115771826
+Score with space_removed_q_in_d removed: 0.637551043855
+Score with q_mean_of_training_relevance removed: 0.641494919057
+Score with q_median_of_training_relevance removed: 0.636043876177
+Score with closest_title_relevance removed: 0.642511308549
+Score with closest_description_relevance removed: 0.638677893082
+Score with weighted_title_relevance removed: 0.627494765937
+Score with weighted_description_relevance removed: 0.639336361057
+Score with weighted_description_relevance_two removed: 0.631739895519
+Score with weighted_title_relevance_two removed: 0.608384307066
+Score with two_grams_in_q_and_t removed: 0.642005666464
+Score with two_grams_in_q_and_d removed: 0.64068374048
+
+Ran it a get increasing the n_estimators from 300 to 600
+Score: 0.643328348999
+Score with query_tokens_in_title removed: 0.626235742233
+Score with query_tokens_in_description removed: 0.645825578491
+Score with query_length removed: 0.640429638798
+Score with percent_query_tokens_in_description removed: 0.655858419571
+Score with percent_query_tokens_in_title removed: 0.641996682498
+Score with exact_query_in_title removed: 0.644583480825
+Score with exact_query_in_description removed: 0.639295693177
+Score with space_removed_q_in_t removed: 0.648030322296
+Score with space_removed_q_in_d removed: 0.635626339377
+Score with q_mean_of_training_relevance removed: 0.636089501646
+Score with q_median_of_training_relevance removed: 0.635297694001
+Score with closest_title_relevance removed: 0.641121446785
+Score with closest_description_relevance removed: 0.640939072305
+Score with weighted_title_relevance removed: 0.631125731045
+Score with weighted_description_relevance removed: 0.636296730253
+Score with weighted_description_relevance_two removed: 0.635983988741
+Score with weighted_title_relevance_two removed: 0.617787075129
+Score with two_grams_in_q_and_t removed: 0.644978566096
+Score with two_grams_in_q_and_d removed: 0.642201981003
+
+query_tokens_in_description, percent_query_tokens_in_description

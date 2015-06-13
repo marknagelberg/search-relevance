@@ -58,6 +58,20 @@ class FeatureMapper:
         else: 
             return extracted[0]
 
+    def remove(self, feature_list):
+      new_features = [x for x in self.features if x[1] not in feature_list]
+      return_features = FeatureMapper(new_features)
+      return return_features
+
+    def add(self, feature_name):
+      self.features.append((feature_name, feature_name, SimpleTransform()))
+
+    def get_column_names(self):
+      column_names = []
+      for feature_name, column_name, extractor in self.features:
+        column_names.append(column_name)
+      return column_names
+
 def identity(x):
     return x
 
@@ -139,9 +153,7 @@ def ouput_final_model(pipeline, train, test):
 
 #                          Feature Set Name            Data Frame Column              Transformer
 features = FeatureMapper([('QueryTokensInTitle',       'query_tokens_in_title',       SimpleTransform()),
-                          ('QueryTokensInDescription', 'query_tokens_in_description', SimpleTransform()),
                           ('QueryLength',              'query_length',                SimpleTransform()),
-                          ('PQueryTokensInDescription','percent_query_tokens_in_description', SimpleTransform()),
                           ('PQueryTokensInTitle',      'percent_query_tokens_in_title', SimpleTransform()),
                           ('ExactQueryInTitle',        'exact_query_in_title',        SimpleTransform()),
                           ('ExactQueryInDescription',  'exact_query_in_description',  SimpleTransform()),
@@ -161,7 +173,7 @@ features = FeatureMapper([('QueryTokensInTitle',       'query_tokens_in_title', 
 
 # note - removed ('svd', TruncatedSVD(n_components=225, algorithm='randomized', n_iter=5, random_state=None, tol=0.0)) from below
 pipeline = Pipeline([("extract_features", features),
-                     ("classify", RandomForestClassifier(n_estimators=200,
+                     ("classify", RandomForestClassifier(n_estimators=300,
                                                          n_jobs=1,
                                                          min_samples_split=2,
                                                          random_state=1))])
@@ -169,7 +181,43 @@ pipeline = Pipeline([("extract_features", features),
 #train = cPickle.load(open('train_extracted_df.pkl', 'r'))
 #test = cPickle.load(open('test_extracted_df.pkl', 'r'))
 
-train = pd.read_csv("input/train.csv").fillna("")
+#train = pd.read_csv("input/train.csv").fillna("")
 #test = pd.read_csv("input/test.csv").fillna("")
-perform_cross_validation(pipeline, train)
+#perform_cross_validation(pipeline, train)
 #ouput_final_model(pipeline = pipeline, train = train, test = test)
+
+
+#Use the code below if you want to test models on StratifiedKFold sample without
+#having to extract new features every time.
+
+train = cPickle.load(open('train_extracted_df_StratifiedKFold.pkl', 'r'))
+test = cPickle.load(open('test_extracted_df_StratifiedKFold.pkl', 'r'))
+y_train = train["median_relevance"]
+y_test = test["median_relevance"]
+
+#Fit baseline model
+pipeline.fit(train, y_train)
+predictions = pipeline.predict(test)
+score = evaluation.quadratic_weighted_kappa(y = y_test, y_pred = predictions)
+print "Score: " + str(score)
+
+'''
+#Test removing each variable to see how score changes
+for col_name in features.get_column_names():
+
+  new_features = features.remove([col_name])
+
+  pipeline = Pipeline([("extract_features", new_features),
+                       ("classify", RandomForestClassifier(n_estimators=300,
+                                                           n_jobs=1,
+                                                           min_samples_split=2,
+                                                           random_state=1))])
+
+  
+
+  #Fit the model
+  pipeline.fit(train, y_train)
+  predictions = pipeline.predict(test)
+  score = evaluation.quadratic_weighted_kappa(y = y_test, y_pred = predictions)
+  print "Score with " + col_name + " removed: " + str(score)
+'''
