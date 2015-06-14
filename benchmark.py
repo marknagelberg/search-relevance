@@ -19,7 +19,7 @@ from sklearn.preprocessing import StandardScaler
 from sklearn.svm import SVC
 from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.feature_extraction import text
-
+from sklearn.cross_validation import KFold, StratifiedKFold
 
 def extract_features(data, stemmed):
     token_pattern = re.compile(r"(?u)\b\w\w+\b")
@@ -261,6 +261,36 @@ def remove_stop_words(data):
         data.set_value(i, "product_title", t)
         data.set_value(i, "product_description", d)
 
+def extract_bow_v1_features(train, test):
+    traindata = list(train.apply(lambda x:'%s %s' % (x['query'],x['product_title']),axis=1))
+    testdata = list(test.apply(lambda x:'%s %s' % (x['query'],x['product_title']),axis=1))
+    return (traindata, testdata)
+
+
+def extract_bow_v2_features(train, test, test_contains_labels = False):
+    s_data = []
+    s_labels = []
+    t_data = []
+    t_labels = []
+    #remove html, remove non text or numeric, make query and title unique features for counts using prefix (accounted for in stopwords tweak)
+    stemmer = PorterStemmer()    
+    
+    for i, row in train.iterrows():
+        s=(" ").join(["q"+ z for z in BeautifulSoup(train["query"][i]).get_text(" ").split(" ")]) + " " + (" ").join(["z"+ z for z in BeautifulSoup(train.product_title[i]).get_text(" ").split(" ")]) + " " + BeautifulSoup(train.product_description[i]).get_text(" ")
+        s=re.sub("[^a-zA-Z0-9]"," ", s)
+        s= (" ").join([stemmer.stem(z) for z in s.split(" ")])
+        s_data.append(s)
+        s_labels.append(str(train["median_relevance"][i]))
+    for i, row in test.iterrows():
+        s=(" ").join(["q"+ z for z in BeautifulSoup(test["query"][i]).get_text().split(" ")]) + " " + (" ").join(["z"+ z for z in BeautifulSoup(test.product_title[i]).get_text().split(" ")]) + " " + BeautifulSoup(test.product_description[i]).get_text()
+        s=re.sub("[^a-zA-Z0-9]"," ", s)
+        s= (" ").join([stemmer.stem(z) for z in s.split(" ")])
+        t_data.append(s)
+        if test_contains_labels:
+            t_labels.append(str(test["median_relevance"][i]))
+            
+    return (s_data, s_labels, t_data, t_labels)
+
 def extract(train, test):
 
     print "Removing stop words in training data"
@@ -282,3 +312,58 @@ def extract(train, test):
     print "Extracting training/test features"
     extract_training_features(train, test)
 
+
+if __name__ == '__main__':
+
+    # Load the training file
+    train = pd.read_csv('input/train.csv').fillna("")
+    test = pd.read_csv('input/test.csv').fillna("")
+
+    #Extract data for each StratifiedKFold fold
+    #and add the resulting sets of training/test
+    #data to a list a dump it to csv and pickle.
+    #List takes form [(X1_train, y1_train, X1_test, y1_test), ..., (X5_train, y5_train, X5_test, y5_test)]
+    
+    kfold_train_test = []
+    bow_v1_kfold_trian_test = []
+    bow_v2_kfold_trian_test = []    
+    kf = StratifiedKFold(train["query"], n_folds=5)
+    for train_index, test_index in kf:
+        X_train = train.loc[train_index]
+        y_train = train.loc[train_index,"median_relevance"]
+
+        X_test = train.loc[test_index]
+        y_test = train.loc[test_index, "median_relevance"]
+
+        print X_train.head()
+        print X_test.head()
+        #Add/extract new variables to train and test
+        extract(X_train, X_test)
+        #Add them to the list
+        kfold_train_test.append((X_train, y_train, X_test, y_test))
+
+        #Extract bag of words features and add them to lists
+        bow_v1_features = extract_bow_v1_features(X_train, X_test)
+        bow_v1_kfold_trian_test.append(bow_v1_features)
+        bow_v2_features = extract_bow_v2_features(X_train, X_test, test_contains_labels = True)
+        bow_v2_kfold_trian_test.append(bow_v2_kfold_trian_test)
+    
+    cPickle.dump(kfold_train_test, open('kfold_train_test.pkl', 'w'))
+    cPickle.dump(bow_v1_kfold_trian_test, open('bow_v1_kfold_trian_test.pkl', 'w'))
+    cPickle.dump(bow_v2_kfold_trian_test, open('bow_v2_kfold_trian_test.pkl', 'w'))
+
+    #Extract variables for full train and test set
+    extract(train, test)
+    train.to_csv("Explore Train Set (With Transformations).csv", index=False)
+    test.to_csv("Explore Test Set (With Transformations).csv", index=False)
+    cPickle.dump(train, open('train_extracted_df.pkl', 'w'))
+    cPickle.dump(test, open('test_extracted_df.pkl', 'w'))  
+    
+    print "Extracting bag of words v1 features"
+    bow_v1_features = extract_bow_v1_features(train, test)
+    cPickle.dump(bow_v1_features, open('bow_v1_features_full_dataset.pkl', 'w'))
+
+    print "Extracting bag of words v2 features"
+    bow_v2_features = extract_bow_v2_features(train, test)
+    cPickle.dump(bow_v2_features, open('bow_v2_features_full_dataset.pkl', 'w'))
+    
