@@ -24,7 +24,9 @@ Check out recommender system algorithms that may be of use http://en.wikipedia.o
 Perhaps consider ensembling with a model that uses bag of words technique. Look up ensembling methods - 
 this will be a last step, but don't want to be rushed.
 
-
+Separate work - code that extracts features and pickles the data - make it so it extracts full data set and also 
+extracts for each of the 5 StratifiedKFolds. Then have code that runs the models on the data - code that runs on the full
+data and also runs on each of the cv sets.
 
 Feature ideas:
 Variance rating in training for that particular query, across all titles and descriptions
@@ -57,6 +59,8 @@ has results with "Spider-man"
 Are there repeated query/title combinations? If so, it seems that any time we encounter a known query/title combination
 in test set, we should just assign it the rating seen already. Check to see whether this is the case and also check
 the variation in ratings among common query/title combos.
+
+Try to incorporate relevance variance - perhaps for each query, insert the average relevance variance. 
 
 Got the following results to test what happens when leaving out variables:
 Score: 0.643129109937
