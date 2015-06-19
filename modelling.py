@@ -111,38 +111,38 @@ def perform_cross_validation(pipeline, kfold_train_test):
         score_total += score
         print "Score " + str(score_count) + ": " + str(score)
 
+        #Add features to X_test and print it to a csv file
         X_test["median_relevance_pred"] = predictions
         X_test["(i-j)^2"] = [(row["median_relevance"] - row["median_relevance_pred"])**2 for idx, row in X_test.loc[:, ("median_relevance","median_relevance_pred")].iterrows()]
         X_test["i-j"] = [row["median_relevance"] - row["median_relevance_pred"] for idx, row in X_test.loc[:, ("median_relevance","median_relevance_pred")].iterrows()]
         filename = "stratifiedkfold_test_set_with_predictions_" + str(score_count) + ".csv"
         X_test.to_csv(filename, index=False)
-        test_data.append(X_test)
+        y_and_y_pred = pd.DataFrame({'y': y_test, 'y_pred': predictions})
+
+        #Add y and y_pred to array to return for ensembling purposes
+        test_data.append(y_and_y_pred)
     average_score = score_total/float(score_count)
     print "Average score: " + str(average_score)
     return test_data
 
-def perform_tfidf_cross_validation(transform, pipeline, kfold_train_test):
+def perform_tfidf_v1_cross_validation(tfv, pipeline, kfold_train_test):
     score_count = 0
     score_total = 0.0
     test_data = []
     for X_train, y_train, X_test, y_test in kfold_train_test:
-        tfv.fit(X_train)
-        X_train =  tfv.transform(X_train) 
-        X_test = tfv.transform(X_test)
-        pipeline.fit(X_train, y_train)
-        predictions = pipeline.predict(X_test)
-        score_count += 1
-        score = evaluation.quadratic_weighted_kappa(y = y_test, y_pred = predictions)
-        score_total += score
-        print "Score " + str(score_count) + ": " + str(score)
-
-        X_test["median_relevance_pred"] = predictions
-        X_test["(i-j)^2"] = [(row["median_relevance"] - row["median_relevance_pred"])**2 for idx, row in X_test.loc[:, ("median_relevance","median_relevance_pred")].iterrows()]
-        X_test["i-j"] = [row["median_relevance"] - row["median_relevance_pred"] for idx, row in X_test.loc[:, ("median_relevance","median_relevance_pred")].iterrows()]
-        filename = "stratifiedkfold_tfidf_test_set_with_predictions_" + str(score_count) + ".csv"
-        X_test.to_csv(filename, index=False)
-        test_data.append(X_test)
-        break
+      
+      tfv.fit(X_train)
+      X_train =  tfv.transform(X_train) 
+      X_test = tfv.transform(X_test)
+      pipeline.fit(X_train, y_train)
+      predictions = pipeline.predict(X_test)
+      score_count += 1
+      score = evaluation.quadratic_weighted_kappa(y = y_test, y_pred = predictions)
+      score_total += score
+      print "Score " + str(score_count) + ": " + str(score)
+      y_and_y_pred = pd.DataFrame({'y': y_test, 'y_pred': predictions})
+      test_data.append(y_and_y_pred)
+      
     average_score = score_total/float(score_count)
     print "Average score: " + str(average_score)
     return test_data
@@ -156,7 +156,7 @@ def ouput_final_model(pipeline, train, test, filename):
 
   submission = pd.DataFrame({"id": test["id"], "prediction": predictions})
   submission.to_csv(filename, index=False)
-  return predictions
+  return submission
 
 #                          Feature Set Name            Data Frame Column              Transformer
 features = FeatureMapper([('QueryTokensInTitle',       'query_tokens_in_title',       SimpleTransform()),
@@ -198,21 +198,10 @@ bow_v2_kfold_trian_test = cPickle.load(open('bow_v2_kfold_trian_test.pkl', 'r'))
 
 # Kappa Scorer 
 kappa_scorer = metrics.make_scorer(evaluation.quadratic_weighted_kappa, greater_is_better = True)
-
-#Use variation of code below within each model to tweak parameters
 '''
-# Create a parameter grid to search for best parameters for everything in the pipeline
-param_grid = {'svd__n_components' : [400],
-              'svm__C': [10]}
-
-
-# Initialize Grid Search Model
-model = grid_search.GridSearchCV(estimator = clf, param_grid=param_grid, scoring=kappa_scorer,
-                                 verbose=10, n_jobs=-1, iid=True, refit=True, cv=2)
-'''
-
 
 ####Random forest model#####
+print "Begin random forest model"
 pipeline = Pipeline([("extract_features", features),
                      ("classify", RandomForestClassifier(n_estimators=300,
                                                          n_jobs=1,
@@ -221,69 +210,91 @@ pipeline = Pipeline([("extract_features", features),
                                                          class_weight='auto'))])
 
 rf_cv_test_data = perform_cross_validation(pipeline, kfold_train_test)
+cPickle.dump(rf_cv_test_data, open('rf_cv_test_data.pkl', 'w'))
 rf_final_predictions = ouput_final_model(pipeline, train, test, "rf_final_predictions.csv")
+cPickle.dump(rf_final_predictions, open('rf_final_predictions.pkl', 'w'))
 
-'''
+
 ####SVC Model####
+print "Begin SVC model"
 scl = StandardScaler()
-svm_model = SVC(C=10.0)
+svm_model = SVC(C=10.0, random_state = 1, class_weight = {1:2, 2:1.5, 3:1, 4:1})
 pipeline = Pipeline([("extract_features", features), ('scl', scl), ('svm', svm_model)])
 svc_cv_test_data = perform_cross_validation(pipeline, kfold_train_test)
+cPickle.dump(svc_cv_test_data, open('svc_cv_test_data.pkl', 'w'))
 svc_final_predictions = ouput_final_model(pipeline, train, test, "svc_final_predictions.csv")
+cPickle.dump(svc_final_predictions, open('svc_final_predictions.pkl', 'w'))
+
 
 
 ####AdaBoost Model####
+print "Begin AdaBoost model"
 pipeline = Pipeline([("extract_features", features),
-                     ("classify", AdaBoostClassifier(n_estimators=100))])
+                     ("classify", AdaBoostClassifier(n_estimators=200, random_state = 1, learning_rate = 0.25))])
 adaboost_cv_test_data = perform_cross_validation(pipeline, kfold_train_test)
+cPickle.dump(adaboost_cv_test_data, open('adaboost_cv_test_data.pkl', 'w'))
 adaboost_final_predictions = ouput_final_model(pipeline, train, test, "adaboost_final_predictions.csv")
+cPickle.dump(adaboost_final_predictions, open('adaboost_final_predictions.pkl', 'w'))
+
 
 
 ####Model using bag of words TFIDF v1####
-train = cPickle.load(open('bow_v1_train_full_dataset.pkl', 'r'))
-test = cPickle.load(open('bow_v1_test_full_dataset.pkl', 'r')) 
-bow_v1_kfold_trian_test = cPickle.load(open('bow_v1_kfold_trian_test.pkl', 'r'))
+print "Begin TFIDF v1 model"
+idx = test.id.values.astype(int)
+train_v1, y_v1, test_v1 = bow_v1_features
 
 tfv = TfidfVectorizer(min_df=3,  max_features=None, 
         strip_accents='unicode', analyzer='word',token_pattern=r'\w{1,}',
         ngram_range=(1, 2), use_idf=1,smooth_idf=1,sublinear_tf=1,
         stop_words = 'english')
 
-tfv.fit(train)
-train =  tfv.transform(train) 
-test = tfv.transform(test)
-pipeline = Pipeline([('svd', TruncatedSVD()), ('scl', StandardScaler()), ('svm', SVC())])
+pipeline = Pipeline([('svd', TruncatedSVD(n_components=400)), ('scl', StandardScaler()), ('svm', SVC(C=10))])
 
-tfidf_v1_test_data = perform_tfidf_cross_validation(tfv, pipeline, bow_v1_kfold_trian_test)
-tfidf_v1_final_predictions = ouput_final_model(pipeline, train, test, "tfidf_v1_final_predictions.csv")
+tfidf_v1_test_data = perform_tfidf_v1_cross_validation(tfv, pipeline, bow_v1_kfold_trian_test)
+cPickle.dump(tfidf_v1_test_data, open('tfidf_v1_test_data.pkl', 'w'))
 
+#Output final model for TFIDF v1
+
+tfv.fit(train_v1)
+X_train =  tfv.transform(train_v1) 
+X_test = tfv.transform(test_v1)
+pipeline.fit(X_train, y_v1)
+predictions = pipeline.predict(X_test)
+
+submission = pd.DataFrame({"id": idx, "prediction": predictions})
+submission.to_csv('tfidf_v1_final_predictions.csv', index=False)
+cPickle.dump(submission, open('tfidf_v1_final_predictions.pkl', 'w'))
+
+'''
 ####Model using bag of words TFIDF v2####
+print "Begin TFIDF v2 model"
 data = cPickle.load(open('bow_v2_features_full_dataset.pkl', 'r'))
 bow_v2_kfold_trian_test = cPickle.load(open('bow_v2_kfold_trian_test.pkl', 'r'))
+idx = test.id.values.astype(int)
 
+tfv = TfidfVectorizer(min_df=5, max_df=500, max_features=None, strip_accents='unicode', analyzer='word', token_pattern=r'\w{1,}', ngram_range=(1, 2), use_idf=True, smooth_idf=True, sublinear_tf=True, stop_words = 'english')
 #create sklearn pipeline, fit all, and predit test data
-pipeline = Pipeline([('v',TfidfVectorizer(min_df=5, max_df=500, max_features=None, strip_accents='unicode', analyzer='word', token_pattern=r'\w{1,}', ngram_range=(1, 2), use_idf=True, smooth_idf=True, sublinear_tf=True, stop_words = 'english')), 
-('svd', TruncatedSVD(n_components=200, algorithm='randomized', n_iter=5, random_state=None, tol=0.0)), 
+pipeline = Pipeline([('svd', TruncatedSVD(n_components=200, algorithm='randomized', n_iter=5, random_state=None, tol=0.0)), 
 ('scl', StandardScaler(copy=True, with_mean=True, with_std=True)), 
 ('svm', SVC(C=10.0, kernel='rbf', degree=3, gamma=0.0, coef0=0.0, shrinking=True, probability=False, tol=0.001, cache_size=200, class_weight=None, verbose=False, max_iter=-1, random_state=None))])
-pipeline.fit(s_data, s_labels)
-t_labels = pipeline.predict(t_data)
 
-tfidf_test_data = perform_tfidf_cross_validation(tfv, pipeline, bow_v1_kfold_trian_test)
-tfidf_v2_final_predictions = ouput_final_model(pipeline, train, test, "tfidf_v2_final_predictions.csv")
+#Note that perform_tfidf_v1_cross_validation works for v2 tfidf as well - might want to change name of
+#function to  perform_tfidf_cross_validation
+tfidf_v2_test_data = perform_tfidf_v1_cross_validation(tfv, pipeline, bow_v2_kfold_trian_test)
+cPickle.dump(tfidf_v2_test_data, open('tfidf_v2_test_data.pkl', 'w'))
 
-#Develop a framework for testing different weightings of model results
-predictions = (rf_predictions + svc_predictions + adaboost_predictions)/3.0
+#Output final model for TFIDF v2
+train_v2, y_v2, test_v2, y_v2_empty = bow_v2_features
+tfv.fit(train_v2)
+X_train =  tfv.transform(train_v2) 
+X_test = tfv.transform(test_v2)
+pipeline.fit(X_train, y_v2)
+predictions = pipeline.predict(X_test)
 
-#Try rounding rather than floor function
-predictions = [int(math.floor(p)) for p in predictions]
-#y_test = test["median_relevance"]
-#score = evaluation.quadratic_weighted_kappa(y = y_test, y_pred = predictions)
-#print "Score: " + str(score)
-
-submission = pd.DataFrame({"id": test["id"], "prediction": predictions})
-submission.to_csv("python_benchmark.csv", index=False)
-
+submission = pd.DataFrame({"id": idx, "prediction": predictions})
+submission.to_csv('tfidf_v2_final_predictions.csv', index=False)
+cPickle.dump(submission, open('tfidf_v2_final_predictions.pkl', 'w'))
+'''
 '''
 
 

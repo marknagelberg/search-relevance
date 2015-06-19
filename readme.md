@@ -28,6 +28,10 @@ Separate work - code that extracts features and pickles the data - make it so it
 extracts for each of the 5 StratifiedKFolds. Then have code that runs the models on the data - code that runs on the full
 data and also runs on each of the cv sets.
 
+Try ensembling models that perform badly with ones that perform well - e.g. RandomForest with class_weight = 'auto', along with
+RandomForest with default class_weight = None. It seems like it may be good to throw in at least one model in the ensemble that
+puts a lot of weight on median_rating = 1 or 2
+
 Feature ideas:
 Variance rating in training for that particular query, across all titles and descriptions
 When looking at the rating of the closest other query, there is always a chance that the closest actually
@@ -209,3 +213,42 @@ Score with weighted_2gram_title_relevance_two removed: 0.630909883639
 Score with two_grams_in_q_and_t removed: 0.639234955175
 Score with two_grams_in_q_and_d removed: 0.623194505726
 [Finished in 204.9s]
+
+Following output running modelling.py on 6/17/2015
+
+Begin random forest model
+Score 1: 0.665458244217
+Score 2: 0.685827198148
+Score 3: 0.664815233248
+Score 4: 0.679087900115
+Score 5: 0.687667811831
+Average score: 0.676571277512
+Begin SVC model
+Score 1: 0.650030531348
+Score 2: 0.678222922425
+Score 3: 0.654738474998
+Score 4: 0.653206776354
+Score 5: 0.665430738888
+Average score: 0.660325888803
+Begin AdaBoost model
+Score 1: 0.62612860127
+Score 2: 0.662701980327
+Score 3: 0.618708504307
+Score 4: 0.655131017659
+Score 5: 0.649796914633
+Average score: 0.642493403639
+Begin TFIDF v1 model
+Score 1: 0.567270816228
+Score 2: 0.607283145266
+Score 3: 0.604396831139
+Score 4: 0.595896181024
+Score 5: 0.600472858411
+Average score: 0.595063966414
+Begin TFIDF v2 model
+Score 1: 0.549181036341
+Score 2: 0.590604987578
+Score 3: 0.5944862103
+Score 4: 0.599271968334
+Score 5: 0.588588306131
+Average score: 0.584426501737
+[Finished in 1242.8s]

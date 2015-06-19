@@ -262,9 +262,16 @@ def remove_stop_words(data):
         data.set_value(i, "product_description", d)
 
 def extract_bow_v1_features(train, test):
-    traindata = list(train.apply(lambda x:'%s %s' % (x['query'],x['product_title']),axis=1))
-    testdata = list(test.apply(lambda x:'%s %s' % (x['query'],x['product_title']),axis=1))
-    return (traindata, testdata)
+
+    traindata = train['query'] + ' ' + train['product_title']
+    y_train = train['median_relevance']
+    testdata = test['query'] + ' ' + test['product_title']
+    if 'median_relevance' in test.columns.values:
+        y_test = test['median_relevance']
+    else:
+        y_test = []
+
+    return (traindata, y_train, testdata, y_test)
 
 
 def extract_bow_v2_features(train, test, test_contains_labels = False):
@@ -334,22 +341,24 @@ if __name__ == '__main__':
 
         X_test = train.loc[test_index]
         y_test = train.loc[test_index, "median_relevance"]
-
-        print X_train.head()
-        print X_test.head()
+        '''
         #Add/extract new variables to train and test
         extract(X_train, X_test)
         #Add them to the list
         kfold_train_test.append((X_train, y_train, X_test, y_test))
 
         #Extract bag of words features and add them to lists
+        '''
         bow_v1_features = extract_bow_v1_features(X_train, X_test)
         bow_v1_kfold_trian_test.append(bow_v1_features)
+        '''
         bow_v2_features = extract_bow_v2_features(X_train, X_test, test_contains_labels = True)
-        bow_v2_kfold_trian_test.append(bow_v2_kfold_trian_test)
+        bow_v2_kfold_trian_test.append(bow_v2_features)
     
     cPickle.dump(kfold_train_test, open('kfold_train_test.pkl', 'w'))
+    '''
     cPickle.dump(bow_v1_kfold_trian_test, open('bow_v1_kfold_trian_test.pkl', 'w'))
+    '''
     cPickle.dump(bow_v2_kfold_trian_test, open('bow_v2_kfold_trian_test.pkl', 'w'))
 
     #Extract variables for full train and test set
@@ -362,8 +371,8 @@ if __name__ == '__main__':
     print "Extracting bag of words v1 features"
     bow_v1_features = extract_bow_v1_features(train, test)
     cPickle.dump(bow_v1_features, open('bow_v1_features_full_dataset.pkl', 'w'))
-
+    
     print "Extracting bag of words v2 features"
     bow_v2_features = extract_bow_v2_features(train, test)
     cPickle.dump(bow_v2_features, open('bow_v2_features_full_dataset.pkl', 'w'))
-    
+    '''
