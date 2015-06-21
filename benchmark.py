@@ -174,7 +174,7 @@ def calculate_nearby_relevance_tuple(group, row, col_name):
         if float(weighted_2gram_ratings[x][0]) != 0.0:
             weighted_2gram_median_rating += (x * weighted_2gram_ratings[x][1])/float(weighted_2gram_ratings[x][0])
 
-    return (return_rating, max_weighted_median_rating, weighted_median_rating, return_2gram_rating, max_weighted_2gram_median_rating, weighted_2gram_median_rating)
+    return (return_rating, max_weighted_median_rating, weighted_median_rating, return_2gram_rating, max_weighted_2gram_median_rating, weighted_2gram_median_rating), (weighted_ratings, weighted_2gram_ratings)
 
         
 def extract_training_features(train, test):
@@ -201,7 +201,7 @@ def extract_training_features(train, test):
         train.set_value(i, "avg_relevance_variance", avg_relevance_variance)
         test.loc[test["query"] == row["query"], "avg_relevance_variance"] = avg_relevance_variance
 
-        (closest_title_relevance, weighted_title_relevance, weighted_title_relevance_two, closest_2gram_title_relevance, weighted_2gram_title_relevance, weighted_2gram_title_relevance_two) = calculate_nearby_relevance_tuple(group, row, 'product_title')
+        (closest_title_relevance, weighted_title_relevance, weighted_title_relevance_two, closest_2gram_title_relevance, weighted_2gram_title_relevance, weighted_2gram_title_relevance_two), (weight_dict, weight_dict_2gram) = calculate_nearby_relevance_tuple(group, row, 'product_title')
         train.set_value(i, "closest_title_relevance", closest_title_relevance)
         train.set_value(i, "weighted_title_relevance", weighted_title_relevance)
         train.set_value(i, "weighted_title_relevance_two", weighted_title_relevance_two)
@@ -209,7 +209,20 @@ def extract_training_features(train, test):
         train.set_value(i, "weighted_2gram_title_relevance", weighted_2gram_title_relevance)
         train.set_value(i, "weighted_2gram_title_relevance_two", weighted_2gram_title_relevance_two)
 
-        (closest_description_relevance, weighted_description_relevance, weighted_description_relevance_two, closest_2gram_description_relevance, weighted_2gram_description_relevance, weighted_2gram_description_relevance_two) = calculate_nearby_relevance_tuple(group, row, 'product_description')
+        for j in range(1,5):
+            if weight_dict[j][0] != 0:
+                train.set_value(i, "average_title_similarity_" + str(j), float(weight_dict[j][1])/float(weight_dict[j][0]))
+            else:
+                train.set_value(i, "average_title_similarity_" + str(j), 0)
+
+        for j in range(1,5):
+            if weight_dict_2gram[j][0] != 0:
+                train.set_value(i, "average_title_2gram_similarity_" + str(j), float(weight_dict_2gram[j][1])/float(weight_dict_2gram[j][0]))
+            else:
+                train.set_value(i, "average_title_2gram_similarity_" + str(j), 0)
+
+
+        (closest_description_relevance, weighted_description_relevance, weighted_description_relevance_two, closest_2gram_description_relevance, weighted_2gram_description_relevance, weighted_2gram_description_relevance_two), (weight_dict, weight_dict_2gram) = calculate_nearby_relevance_tuple(group, row, 'product_description')
         train.set_value(i, "closest_description_relevance", closest_description_relevance)
         train.set_value(i, "weighted_description_relevance", weighted_description_relevance)
         train.set_value(i, "weighted_description_relevance_two", weighted_description_relevance_two)
@@ -217,9 +230,21 @@ def extract_training_features(train, test):
         train.set_value(i, "weighted_2gram_description_relevance", weighted_2gram_description_relevance)
         train.set_value(i, "weighted_2gram_description_relevance_two", weighted_2gram_description_relevance_two)
 
+        for j in range(1,5):
+            if weight_dict[j][0] != 0:
+                train.set_value(i, "average_description_similarity_" + str(j), float(weight_dict[j][1])/float(weight_dict[j][0]))
+            else:
+                train.set_value(i, "average_description_similarity_" + str(j), 0)
+
+        for j in range(1,5):
+            if weight_dict_2gram[j][0] != 0:
+                train.set_value(i, "average_description_2gram_similarity_" + str(j), float(weight_dict_2gram[j][1])/float(weight_dict_2gram[j][0]))
+            else:
+                train.set_value(i, "average_description_2gram_similarity_" + str(j), 0)
+
     for i, row in test.iterrows():
         group = train_group.get_group(row["query"])
-        (closest_title_relevance, weighted_title_relevance, weighted_title_relevance_two, closest_2gram_title_relevance, weighted_2gram_title_relevance, weighted_2gram_title_relevance_two) = calculate_nearby_relevance_tuple(group, row, 'product_title')
+        (closest_title_relevance, weighted_title_relevance, weighted_title_relevance_two, closest_2gram_title_relevance, weighted_2gram_title_relevance, weighted_2gram_title_relevance_two), (weight_dict, weight_dict_2gram) = calculate_nearby_relevance_tuple(group, row, 'product_title')
         test.set_value(i, "closest_title_relevance", closest_title_relevance)
         test.set_value(i, "weighted_title_relevance", weighted_title_relevance)
         test.set_value(i, "weighted_title_relevance_two", weighted_title_relevance_two)
@@ -227,13 +252,37 @@ def extract_training_features(train, test):
         test.set_value(i, "weighted_2gram_title_relevance", weighted_2gram_title_relevance)
         test.set_value(i, "weighted_2gram_title_relevance_two", weighted_2gram_title_relevance_two)
 
-        (closest_description_relevance, weighted_description_relevance, weighted_description_relevance_two, closest_2gram_description_relevance, weighted_2gram_description_relevance, weighted_2gram_description_relevance_two) = calculate_nearby_relevance_tuple(group, row, 'product_description')
+        for j in range(1,5):
+            if weight_dict[j][0] != 0:
+                test.set_value(i, "average_title_similarity_" + str(j), float(weight_dict[j][1])/float(weight_dict[j][0]))
+            else:
+                test.set_value(i, "average_title_similarity_" + str(j), 0)
+
+        for j in range(1,5):
+            if weight_dict_2gram[j][0] != 0:
+                test.set_value(i, "average_title_2gram_similarity_" + str(j), float(weight_dict_2gram[j][1])/float(weight_dict_2gram[j][0]))
+            else:
+                test.set_value(i, "average_title_2gram_similarity_" + str(j), 0)
+
+        (closest_description_relevance, weighted_description_relevance, weighted_description_relevance_two, closest_2gram_description_relevance, weighted_2gram_description_relevance, weighted_2gram_description_relevance_two), (weight_dict, weight_dict_2gram) = calculate_nearby_relevance_tuple(group, row, 'product_description')
         test.set_value(i, "closest_description_relevance", closest_description_relevance)        
         test.set_value(i, "weighted_description_relevance", weighted_description_relevance)
         test.set_value(i, "weighted_description_relevance_two", weighted_description_relevance_two)
         test.set_value(i, "closest_2gram_description_relevance", closest_2gram_description_relevance)        
         test.set_value(i, "weighted_2gram_description_relevance", weighted_2gram_description_relevance)
         test.set_value(i, "weighted_2gram_description_relevance_two", weighted_2gram_description_relevance_two)
+
+        for j in range(1,5):
+            if weight_dict[j][0] != 0:
+                test.set_value(i, "average_description_similarity_" + str(j), float(weight_dict[j][1])/float(weight_dict[j][0]))
+            else:
+                test.set_value(i, "average_description_similarity_" + str(j), 0)
+
+        for j in range(1,5):
+            if weight_dict_2gram[j][0] != 0:
+                test.set_value(i, "average_description_2gram_similarity_" + str(j), float(weight_dict_2gram[j][1])/float(weight_dict_2gram[j][0]))
+            else:
+                test.set_value(i, "average_description_2gram_similarity_" + str(j), 0)
 
 def stem_data(data):
 
@@ -361,18 +410,18 @@ if __name__ == '__main__':
         kfold_train_test.append((X_train, y_train, X_test, y_test))
 
         #Extract bag of words features and add them to lists
-        
+        '''
         bow_v1_features = extract_bow_v1_features(X_train, X_test)
         bow_v1_kfold_trian_test.append(bow_v1_features)
         
         bow_v2_features = extract_bow_v2_features(X_train, X_test, test_contains_labels = True)
         bow_v2_kfold_trian_test.append(bow_v2_features)
-    
+        '''
     cPickle.dump(kfold_train_test, open('kfold_train_test.pkl', 'w'))
     
-    cPickle.dump(bow_v1_kfold_trian_test, open('bow_v1_kfold_trian_test.pkl', 'w'))
+    #cPickle.dump(bow_v1_kfold_trian_test, open('bow_v1_kfold_trian_test.pkl', 'w'))
     
-    cPickle.dump(bow_v2_kfold_trian_test, open('bow_v2_kfold_trian_test.pkl', 'w'))
+    #cPickle.dump(bow_v2_kfold_trian_test, open('bow_v2_kfold_trian_test.pkl', 'w'))
 
     #Extract variables for full train and test set
     extract(train, test)
@@ -380,7 +429,7 @@ if __name__ == '__main__':
     test.to_csv("Explore Test Set (With Transformations).csv", index=False)
     cPickle.dump(train, open('train_extracted_df.pkl', 'w'))
     cPickle.dump(test, open('test_extracted_df.pkl', 'w'))  
-    
+    '''
     print "Extracting bag of words v1 features"
     bow_v1_features = extract_bow_v1_features(train, test)
     cPickle.dump(bow_v1_features, open('bow_v1_features_full_dataset.pkl', 'w'))
@@ -388,4 +437,4 @@ if __name__ == '__main__':
     print "Extracting bag of words v2 features"
     bow_v2_features = extract_bow_v2_features(train, test)
     cPickle.dump(bow_v2_features, open('bow_v2_features_full_dataset.pkl', 'w'))
-    
+    '''

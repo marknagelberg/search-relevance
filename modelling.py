@@ -184,7 +184,23 @@ features = FeatureMapper([('QueryTokensInTitle',       'query_tokens_in_title', 
                           ('Weighted2GramTitleRelevanceTwo', 'weighted_2gram_title_relevance_two', SimpleTransform()),
                           ('TwoGramsInQandT',           'two_grams_in_q_and_t', SimpleTransform()),
                           ('TwoGramsInQandD',           'two_grams_in_q_and_d', SimpleTransform()),
-                          ('AvgRelevanceVariance',      'avg_relevance_variance', SimpleTransform())])
+                          ('AvgRelevanceVariance',      'avg_relevance_variance', SimpleTransform()),
+                          ('AvgTitleSimilarity1', 'average_title_similarity_1', SimpleTransform()),
+                          ('AvgTitleSimilarity2', 'average_title_similarity_2', SimpleTransform()),
+                          ('AvgTitleSimilarity3', 'average_title_similarity_3', SimpleTransform()),
+                          ('AvgTitleSimilarity4', 'average_title_similarity_4', SimpleTransform()),
+                          ('AvgTitle2GramSimilarity1', 'average_title_2gram_similarity_1', SimpleTransform()),
+                          ('AvgTitle2GramSimilarity2', 'average_title_2gram_similarity_2', SimpleTransform()),
+                          ('AvgTitle2GramSimilarity3', 'average_title_2gram_similarity_3', SimpleTransform()),
+                          ('AvgTitle2GramSimilarity4', 'average_title_2gram_similarity_4', SimpleTransform()),
+                          ('AvgDescriptionSimilarity1', 'average_description_similarity_1', SimpleTransform()),
+                          ('AvgDescriptionSimilarity2', 'average_description_similarity_2', SimpleTransform()),
+                          ('AvgDescriptionSimilarity3', 'average_description_similarity_3', SimpleTransform()),
+                          ('AvgDescriptionSimilarity4', 'average_description_similarity_4', SimpleTransform()),
+                          ('AvgDescription2GramSimilarity1', 'average_description_2gram_similarity_1', SimpleTransform()),
+                          ('AvgDescription2GramSimilarity2', 'average_description_2gram_similarity_2', SimpleTransform()),
+                          ('AvgDescription2GramSimilarity3', 'average_description_2gram_similarity_3', SimpleTransform()),
+                          ('AvgDescription2GramSimilarity4', 'average_description_2gram_similarity_4', SimpleTransform())])
 
 
 
@@ -204,6 +220,8 @@ bow_v2_kfold_trian_test = cPickle.load(open('bow_v2_kfold_trian_test.pkl', 'r'))
 # Kappa Scorer 
 kappa_scorer = metrics.make_scorer(evaluation.quadratic_weighted_kappa, greater_is_better = True)
 
+'''
+'''
 
 ####Random forest model#####
 print "Begin random forest model"
@@ -214,19 +232,6 @@ pipeline = Pipeline([("extract_features", features),
                                                          random_state=1,
                                                          class_weight='auto'))])
 
-#Get importance of each variable from Random Forest
-'''
-clf = RandomForestClassifier(n_estimators=300,n_jobs=1,min_samples_split=10,random_state=1,class_weight='auto')
-clf.fit(train[features.get_column_names()], y_train)
-import csv
-with open('importances.csv', 'wb') as csvfile:
-
-  for i, name in enumerate(features.get_column_names()):
-    print name + ', ' + str(clf.feature_importances_[i])
-    writer = csv.writer(csvfile, delimiter=' ',
-                            quotechar='|', quoting=csv.QUOTE_MINIMAL)
-    writer.writerow([name + ',' + str(clf.feature_importances_[i])])
-'''
 
 
 rf_cv_test_data = perform_cross_validation(pipeline, kfold_train_test)
@@ -271,9 +276,26 @@ adaboost_cv_test_data = perform_cross_validation(pipeline, kfold_train_test)
 cPickle.dump(adaboost_cv_test_data, open('adaboost_cv_test_data.pkl', 'w'))
 adaboost_final_predictions = ouput_final_model(pipeline, train, test, "adaboost_final_predictions.csv")
 cPickle.dump(adaboost_final_predictions, open('adaboost_final_predictions.pkl', 'w'))
-
-
 '''
+'''
+
+#Get importance of each variable from Random Forest
+
+clf = AdaBoostClassifier(n_estimators=200, random_state = 1, learning_rate = 0.25)
+clf.fit(train[features.get_column_names()], y_train)
+import csv
+with open('importancesAdaboost.csv', 'wb') as csvfile:
+
+  for i, name in enumerate(features.get_column_names()):
+    print name + ', ' + str(clf.feature_importances_[i])
+    writer = csv.writer(csvfile, delimiter=' ',
+                            quotechar='|', quoting=csv.QUOTE_MINIMAL)
+    writer.writerow([name + ',' + str(clf.feature_importances_[i])])
+'''
+
+
+
+
 ####Model using bag of words TFIDF v1####
 print "Begin TFIDF v1 model"
 idx = test.id.values.astype(int)
@@ -330,8 +352,8 @@ predictions = pipeline.predict(X_test)
 submission = pd.DataFrame({"id": idx, "prediction": predictions})
 submission.to_csv('tfidf_v2_final_predictions.csv', index=False)
 cPickle.dump(submission, open('tfidf_v2_final_predictions.pkl', 'w'))
-
 '''
+
 
 
 ###########################

@@ -71,8 +71,13 @@ Try to incorporate relevance variance - perhaps for each query, insert the avera
 Try looking into the implications of having "0" as a default value for some features (particularly the 
 k-nearest measures). See what happens when you impute the overall median relevance or something like that.
 
-Important to consider that people search a particular query for a purpose that may vary by person. For example,
-people looking for 
+Important to consider that people search a particular query for a purpose that may vary by person. 
+
+Feature idea try reworking the weighting variables with a column for the summed up relevance for each rating (one column for 
+each of the four ratings, and then divided by the number of observations).
+
+Check out when you are using stopwords and stemming for the bag of words models - I think you're doing it for both but
+in the original "beating the benchmark" I think they only stemmed one model.
 
 Got the following results to test what happens when leaving out variables:
 Score: 0.643129109937
