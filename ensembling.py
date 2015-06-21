@@ -29,8 +29,6 @@ for w in wt_list:
 	if sum(w) == 1.0:
 		wt_final.append(w)
 
-
-
 max_average_score = 0
 max_weights = None
 for wt in wt_final:
@@ -60,6 +58,16 @@ preds = [rf_final_predictions, svc_final_predictions, adaboost_final_predictions
 
 weighted_prediction = sum([max_weights[x] * preds[x]["prediction"].astype(int) for x in range(5)])
 weighted_prediction = [int(round(p)) for p in weighted_prediction]
+
+'''
+#Different rounding technique that gets .002 increase in cv - NOTE - resulted in lower score on leaderboard.
+new_weighted_prediction = []
+for p in weighted_prediction:
+	if p >= 2.0:
+		new_weighted_prediction.append(int(round(p)))
+	else:
+		new_weighted_prediction.append(int(math.floor(p)))
+'''
 
 test = cPickle.load(open('test_extracted_df.pkl', 'r'))
 submission = pd.DataFrame({"id": test["id"], "prediction": weighted_prediction})

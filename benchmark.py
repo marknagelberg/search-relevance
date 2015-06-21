@@ -135,7 +135,7 @@ def calculate_nearby_relevance_tuple(group, row, col_name):
             weighted_ratings[group_row['median_relevance']][0] += 1
             weighted_2gram_ratings[group_row['median_relevance']][0] += 1
             weighted_ratings[group_row['median_relevance']][1] += similarity
-            weighted_2gram_ratings[group_row['median_relevance']][0] += twogram_similarity
+            weighted_2gram_ratings[group_row['median_relevance']][1] += twogram_similarity
             if similarity > max_similarity:
                 max_similarity = similarity
                 return_rating = group_row['median_relevance']
@@ -153,7 +153,11 @@ def calculate_nearby_relevance_tuple(group, row, col_name):
                 max_weighted_similarity = current_weighted_similarity
                 max_weighted_median_rating = rating
 
-    weighted_median_rating = float(sum(x * weighted_ratings[x][1] for x in weighted_ratings))/float(sum(weighted_ratings[x][0] for x in weighted_ratings))
+    #weighted_median_rating = float(sum(x * weighted_ratings[x][1] for x in weighted_ratings))/float(sum(weighted_ratings[x][0] for x in weighted_ratings))
+    weighted_median_rating = 0
+    for x in weighted_ratings:
+        if float(weighted_ratings[x][0]) != 0.0:
+            weighted_median_rating += (x * weighted_ratings[x][1])/float(weighted_ratings[x][0])
 
     max_weighted_2gram_similarity = 0
     max_weighted_2gram_median_rating = 0
@@ -164,9 +168,13 @@ def calculate_nearby_relevance_tuple(group, row, col_name):
                 max_weighted_2gram_similarity = current_weighted_2gram_similarity
                 max_weighted_2gram_median_rating = rating
 
-    weighted_2gram_median_rating = float(sum(x * weighted_2gram_ratings[x][1] for x in weighted_2gram_ratings))/float(sum(weighted_2gram_ratings[x][0] for x in weighted_2gram_ratings))
+    #weighted_2gram_median_rating = float(sum(x * weighted_2gram_ratings[x][1] for x in weighted_2gram_ratings))/float(sum(weighted_2gram_ratings[x][0] for x in weighted_2gram_ratings))
+    weighted_2gram_median_rating = 0
+    for x in weighted_2gram_ratings:
+        if float(weighted_2gram_ratings[x][0]) != 0.0:
+            weighted_2gram_median_rating += (x * weighted_2gram_ratings[x][1])/float(weighted_2gram_ratings[x][0])
 
-    return (return_rating, max_weighted_median_rating, weighted_median_rating, return_2gram_rating, max_weighted_2gram_similarity, weighted_2gram_median_rating)
+    return (return_rating, max_weighted_median_rating, weighted_median_rating, return_2gram_rating, max_weighted_2gram_median_rating, weighted_2gram_median_rating)
 
         
 def extract_training_features(train, test):
@@ -177,6 +185,7 @@ def extract_training_features(train, test):
     test["closest_description_relevance"] = 0
     test["closest_2gram_title_relevance"] = 0
     test["closest_2gram_description_relevance"] = 0
+    test["avg_relevance_variance"] = 0
     for i, row in train.iterrows():
         #Move the two blocks below outside this loop - can make them run much faster.
         group = train_group.get_group(row["query"])
@@ -187,6 +196,10 @@ def extract_training_features(train, test):
         q_median = group["median_relevance"].median()
         train.set_value(i, "q_median_of_training_relevance", q_median)
         test.loc[test["query"] == row["query"], "q_median_of_training_relevance"] = q_median
+
+        avg_relevance_variance = group["relevance_variance"].mean()
+        train.set_value(i, "avg_relevance_variance", avg_relevance_variance)
+        test.loc[test["query"] == row["query"], "avg_relevance_variance"] = avg_relevance_variance
 
         (closest_title_relevance, weighted_title_relevance, weighted_title_relevance_two, closest_2gram_title_relevance, weighted_2gram_title_relevance, weighted_2gram_title_relevance_two) = calculate_nearby_relevance_tuple(group, row, 'product_title')
         train.set_value(i, "closest_title_relevance", closest_title_relevance)
@@ -341,24 +354,24 @@ if __name__ == '__main__':
 
         X_test = train.loc[test_index]
         y_test = train.loc[test_index, "median_relevance"]
-        '''
+        
         #Add/extract new variables to train and test
         extract(X_train, X_test)
         #Add them to the list
         kfold_train_test.append((X_train, y_train, X_test, y_test))
 
         #Extract bag of words features and add them to lists
-        '''
+        
         bow_v1_features = extract_bow_v1_features(X_train, X_test)
         bow_v1_kfold_trian_test.append(bow_v1_features)
-        '''
+        
         bow_v2_features = extract_bow_v2_features(X_train, X_test, test_contains_labels = True)
         bow_v2_kfold_trian_test.append(bow_v2_features)
     
     cPickle.dump(kfold_train_test, open('kfold_train_test.pkl', 'w'))
-    '''
+    
     cPickle.dump(bow_v1_kfold_trian_test, open('bow_v1_kfold_trian_test.pkl', 'w'))
-    '''
+    
     cPickle.dump(bow_v2_kfold_trian_test, open('bow_v2_kfold_trian_test.pkl', 'w'))
 
     #Extract variables for full train and test set
@@ -375,4 +388,4 @@ if __name__ == '__main__':
     print "Extracting bag of words v2 features"
     bow_v2_features = extract_bow_v2_features(train, test)
     cPickle.dump(bow_v2_features, open('bow_v2_features_full_dataset.pkl', 'w'))
-    '''
+    

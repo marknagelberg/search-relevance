@@ -152,10 +152,12 @@ def ouput_final_model(pipeline, train, test, filename):
 
   y = train["median_relevance"]
   pipeline.fit(train, y)
+  train_predictions = pipeline.predict(train)
   predictions = pipeline.predict(test)
-
   submission = pd.DataFrame({"id": test["id"], "prediction": predictions})
   submission.to_csv(filename, index=False)
+  train['prediction'] = train_predictions
+  train.to_csv(filename + '.csv', index=False)
   return submission
 
 #                          Feature Set Name            Data Frame Column              Transformer
@@ -181,7 +183,8 @@ features = FeatureMapper([('QueryTokensInTitle',       'query_tokens_in_title', 
                           ('WeightedTitleRelevanceTwo', 'weighted_title_relevance_two', SimpleTransform()),
                           ('Weighted2GramTitleRelevanceTwo', 'weighted_2gram_title_relevance_two', SimpleTransform()),
                           ('TwoGramsInQandT',           'two_grams_in_q_and_t', SimpleTransform()),
-                          ('TwoGramsInQandD',           'two_grams_in_q_and_d', SimpleTransform())])
+                          ('TwoGramsInQandD',           'two_grams_in_q_and_d', SimpleTransform()),
+                          ('AvgRelevanceVariance',      'avg_relevance_variance', SimpleTransform())])
 
 
 
@@ -196,9 +199,11 @@ bow_v2_features = cPickle.load(open('bow_v2_features_full_dataset.pkl', 'r'))
 bow_v1_kfold_trian_test = cPickle.load(open('bow_v1_kfold_trian_test.pkl', 'r'))
 bow_v2_kfold_trian_test = cPickle.load(open('bow_v2_kfold_trian_test.pkl', 'r'))
 
+#features = features.remove(['weighted_2gram_description_relevance'])
+
 # Kappa Scorer 
 kappa_scorer = metrics.make_scorer(evaluation.quadratic_weighted_kappa, greater_is_better = True)
-'''
+
 
 ####Random forest model#####
 print "Begin random forest model"
@@ -209,10 +214,41 @@ pipeline = Pipeline([("extract_features", features),
                                                          random_state=1,
                                                          class_weight='auto'))])
 
+#Get importance of each variable from Random Forest
+'''
+clf = RandomForestClassifier(n_estimators=300,n_jobs=1,min_samples_split=10,random_state=1,class_weight='auto')
+clf.fit(train[features.get_column_names()], y_train)
+import csv
+with open('importances.csv', 'wb') as csvfile:
+
+  for i, name in enumerate(features.get_column_names()):
+    print name + ', ' + str(clf.feature_importances_[i])
+    writer = csv.writer(csvfile, delimiter=' ',
+                            quotechar='|', quoting=csv.QUOTE_MINIMAL)
+    writer.writerow([name + ',' + str(clf.feature_importances_[i])])
+'''
+
+
 rf_cv_test_data = perform_cross_validation(pipeline, kfold_train_test)
 cPickle.dump(rf_cv_test_data, open('rf_cv_test_data.pkl', 'w'))
 rf_final_predictions = ouput_final_model(pipeline, train, test, "rf_final_predictions.csv")
 cPickle.dump(rf_final_predictions, open('rf_final_predictions.pkl', 'w'))
+
+'''
+for col_name in features.get_column_names():
+
+  new_features = features.remove([col_name])
+  pipeline = Pipeline([("extract_features", new_features),
+                     ("classify", RandomForestClassifier(n_estimators=300,
+                                                         n_jobs=1,
+                                                         min_samples_split=10,
+                                                         random_state=1,
+                                                         class_weight='auto'))])
+  print "Score with " + col_name + " removed"
+  perform_cross_validation(pipeline, kfold_train_test)
+'''
+
+
 
 
 ####SVC Model####
@@ -237,7 +273,7 @@ adaboost_final_predictions = ouput_final_model(pipeline, train, test, "adaboost_
 cPickle.dump(adaboost_final_predictions, open('adaboost_final_predictions.pkl', 'w'))
 
 
-
+'''
 ####Model using bag of words TFIDF v1####
 print "Begin TFIDF v1 model"
 idx = test.id.values.astype(int)
@@ -265,7 +301,7 @@ submission = pd.DataFrame({"id": idx, "prediction": predictions})
 submission.to_csv('tfidf_v1_final_predictions.csv', index=False)
 cPickle.dump(submission, open('tfidf_v1_final_predictions.pkl', 'w'))
 
-'''
+
 ####Model using bag of words TFIDF v2####
 print "Begin TFIDF v2 model"
 data = cPickle.load(open('bow_v2_features_full_dataset.pkl', 'r'))
@@ -294,26 +330,24 @@ predictions = pipeline.predict(X_test)
 submission = pd.DataFrame({"id": idx, "prediction": predictions})
 submission.to_csv('tfidf_v2_final_predictions.csv', index=False)
 cPickle.dump(submission, open('tfidf_v2_final_predictions.pkl', 'w'))
-'''
+
 '''
 
 
 ###########################
 
 '''
-#Test removing each variable to see how score changes
 for col_name in features.get_column_names():
 
   new_features = features.remove([col_name])
-
-  #pipeline = Pipeline([("extract_features", new_features), ("classify", AdaBoostClassifier(n_estimators=100))])
-
-  pipeline = Pipeline([("extract_features", new_features), ('scl', scl), ('svm', svm_model)])
-
-
-  #Fit the model
-  pipeline.fit(train, y_train)
-  predictions = pipeline.predict(test)
-  score = evaluation.quadratic_weighted_kappa(y = y_test, y_pred = predictions)
-  print "Score with " + col_name + " removed: " + str(score)
+  pipeline = Pipeline([("extract_features", new_features),
+                     ("classify", RandomForestClassifier(n_estimators=300,
+                                                         n_jobs=1,
+                                                         min_samples_split=10,
+                                                         random_state=1,
+                                                         class_weight='auto'))])
+  print "Score with " + col_name + " removed"
+  perform_cross_validation(pipeline, kfold_train_test)
 '''
+
+
