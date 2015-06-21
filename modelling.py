@@ -220,6 +220,9 @@ bow_v2_kfold_trian_test = cPickle.load(open('bow_v2_kfold_trian_test.pkl', 'r'))
 # Kappa Scorer 
 kappa_scorer = metrics.make_scorer(evaluation.quadratic_weighted_kappa, greater_is_better = True)
 
+
+features = features.remove(['closest_title_relevance', 'closest_2gram_title_relevance', 'closest_description_relevance', 'closest_2gram_description_relevance', 'weighted_title_relevance', 'weighted_2gram_title_relevance', 'weighted_description_relevance', 'weighted_2gram_description_relevance', 'weighted_description_relevance_two', 'weighted_2gram_description_relevance_two', 'weighted_title_relevance_two', 'weighted_2gram_title_relevance_two'])
+
 '''
 '''
 
