@@ -225,7 +225,7 @@ features = features.remove(['closest_title_relevance', 'closest_2gram_title_rele
 
 '''
 '''
-
+'''
 ####Random forest model#####
 print "Begin random forest model"
 pipeline = Pipeline([("extract_features", features),
@@ -242,7 +242,7 @@ cPickle.dump(rf_cv_test_data, open('rf_cv_test_data.pkl', 'w'))
 rf_final_predictions = ouput_final_model(pipeline, train, test, "rf_final_predictions.csv")
 cPickle.dump(rf_final_predictions, open('rf_final_predictions.pkl', 'w'))
 
-'''
+
 for col_name in features.get_column_names():
 
   new_features = features.remove([col_name])
@@ -254,7 +254,7 @@ for col_name in features.get_column_names():
                                                          class_weight='auto'))])
   print "Score with " + col_name + " removed"
   perform_cross_validation(pipeline, kfold_train_test)
-'''
+
 
 
 
@@ -294,15 +294,15 @@ with open('importancesAdaboost.csv', 'wb') as csvfile:
     writer = csv.writer(csvfile, delimiter=' ',
                             quotechar='|', quoting=csv.QUOTE_MINIMAL)
     writer.writerow([name + ',' + str(clf.feature_importances_[i])])
+
+
+
 '''
-
-
-
 
 ####Model using bag of words TFIDF v1####
 print "Begin TFIDF v1 model"
 idx = test.id.values.astype(int)
-train_v1, y_v1, test_v1 = bow_v1_features
+train_v1, y_v1, test_v1, y_test_v1 = bow_v1_features
 
 tfv = TfidfVectorizer(min_df=3,  max_features=None, 
         strip_accents='unicode', analyzer='word',token_pattern=r'\w{1,}',
@@ -355,7 +355,7 @@ predictions = pipeline.predict(X_test)
 submission = pd.DataFrame({"id": idx, "prediction": predictions})
 submission.to_csv('tfidf_v2_final_predictions.csv', index=False)
 cPickle.dump(submission, open('tfidf_v2_final_predictions.pkl', 'w'))
-'''
+
 
 
 

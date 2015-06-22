@@ -397,39 +397,38 @@ if __name__ == '__main__':
     bow_v1_kfold_trian_test = []
     bow_v2_kfold_trian_test = []    
     kf = StratifiedKFold(train["query"], n_folds=5)
+
+    #####LOOK BELOW FOR THE OUTPUT OF THE BAG OF WORDS MODELS - THINK YOU MIGHT BE USING WRONG DATA TO TEST ENSEMBLE####
     for train_index, test_index in kf:
+        
         X_train = train.loc[train_index]
         y_train = train.loc[train_index,"median_relevance"]
 
         X_test = train.loc[test_index]
         y_test = train.loc[test_index, "median_relevance"]
-        
-        #Add/extract new variables to train and test
-        extract(X_train, X_test)
-        #Add them to the list
-        kfold_train_test.append((X_train, y_train, X_test, y_test))
 
         #Extract bag of words features and add them to lists
-        '''
+        
         bow_v1_features = extract_bow_v1_features(X_train, X_test)
         bow_v1_kfold_trian_test.append(bow_v1_features)
         
         bow_v2_features = extract_bow_v2_features(X_train, X_test, test_contains_labels = True)
         bow_v2_kfold_trian_test.append(bow_v2_features)
-        '''
+        
+        #Add/extract new variables to train and test
+        #extract(X_train, X_test)
+        #Add them to the list
+        kfold_train_test.append((X_train, y_train, X_test, y_test))
+
+
     cPickle.dump(kfold_train_test, open('kfold_train_test.pkl', 'w'))
-    
+    ##NOTE - NEED TO RUN THE TWO LINES BELOW TO UPDATE BOW_V1_KFOLD_TRAIN_TEST.PKL - THE 
+    #CROSS VALIDATION SCORES COMING OUT OF MODELLING.PY ARE INACCURATE.
     #cPickle.dump(bow_v1_kfold_trian_test, open('bow_v1_kfold_trian_test.pkl', 'w'))
     
     #cPickle.dump(bow_v2_kfold_trian_test, open('bow_v2_kfold_trian_test.pkl', 'w'))
 
-    #Extract variables for full train and test set
-    extract(train, test)
-    train.to_csv("Explore Train Set (With Transformations).csv", index=False)
-    test.to_csv("Explore Test Set (With Transformations).csv", index=False)
-    cPickle.dump(train, open('train_extracted_df.pkl', 'w'))
-    cPickle.dump(test, open('test_extracted_df.pkl', 'w'))  
-    '''
+    
     print "Extracting bag of words v1 features"
     bow_v1_features = extract_bow_v1_features(train, test)
     cPickle.dump(bow_v1_features, open('bow_v1_features_full_dataset.pkl', 'w'))
@@ -437,4 +436,12 @@ if __name__ == '__main__':
     print "Extracting bag of words v2 features"
     bow_v2_features = extract_bow_v2_features(train, test)
     cPickle.dump(bow_v2_features, open('bow_v2_features_full_dataset.pkl', 'w'))
+    
+    '''
+    #Extract variables for full train and test set
+    extract(train, test)
+    train.to_csv("Explore Train Set (With Transformations).csv", index=False)
+    test.to_csv("Explore Test Set (With Transformations).csv", index=False)
+    cPickle.dump(train, open('train_extracted_df.pkl', 'w'))
+    cPickle.dump(test, open('test_extracted_df.pkl', 'w'))  
     '''
