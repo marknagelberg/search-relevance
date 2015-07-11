@@ -9,6 +9,8 @@ from bs4 import BeautifulSoup
 from sklearn.cross_validation import StratifiedKFold
 
 '''
+Kaggle CrowdFlower Search Results Relevance Competition - Feature Extraction Script
+
 This file performs all the feature engineering I used for the Kaggle CrowdFlower Search
 Results Relevance Competition (https://www.kaggle.com/c/crowdflower-search-relevance). 
 My final submission ultimately scored 0.69764 on the private leaderboard (Kappa Loss Function)
@@ -360,4 +362,3 @@ if __name__ == '__main__':
     extract(train, test)
     cPickle.dump(train, open('train_extracted_df.pkl', 'w'))
     cPickle.dump(test, open('test_extracted_df.pkl', 'w'))  
-    

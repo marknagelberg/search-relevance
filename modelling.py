@@ -11,6 +11,8 @@ from sklearn.svm import SVC
 from sklearn.feature_extraction.text import TfidfVectorizer
 
 '''
+Kaggle CrowdFlower Search Results Relevance Competition - Modelling Script
+
 This file performs all the modelling I used for the Kaggle CrowdFlower Search
 Results Relevance Competition (https://www.kaggle.com/c/crowdflower-search-relevance). 
 My final submission ultimately scored 0.69764 on the private leaderboard (Kappa Loss Function)
@@ -122,7 +124,7 @@ if __name__ == '__main__':
   bow_v2_kfold_trian_test = pickle.load(open('bow_v2_kfold_trian_test.pkl', 'r'))
 
   #Name the features to be used in the first 3 models (Random Forest, SVC, Adaboost).
-  features = ['query_tokens_in_title', 'query_tokens_in_description', 'percent_query_tokens_in_description', 'percent_query_tokens_in_title', 'query_length', 'description_length', 'title_length', 'two_grams_in_q_and_t', 'two_grams_in_q_and_d', 'q_mean_of_training_relevance', 'q_median_of_training_relevance', 'avg_relevance_variance', 'average_title_1gram_similarity_1', 'average_title_2gram_similarity_1', 'average_title_1gram_similarity_2', 'average_title_2gram_similarity_2', 'average_title_1gram_similarity_3', 'average_title_2gram_similarity_3', 'average_title_1gram_similarity_4', 'average_title_2gram_similarity_4', 'average_description_1gram_similarity_1', 'average_description_2gram_similarity_1', 'average_description_2gram_similarity_2', 'average_description_1gram_similarity_3', 'average_description_2gram_similarity_3', 'average_description_1gram_similarity_4', 'average_description_2gram_similarity_4']
+  features = ['query_tokens_in_title', 'query_tokens_in_description', 'percent_query_tokens_in_description', 'percent_query_tokens_in_title', 'query_length', 'description_length', 'title_length', 'two_grams_in_q_and_t', 'two_grams_in_q_and_d', 'q_mean_of_training_relevance', 'q_median_of_training_relevance', 'avg_relevance_variance', 'average_title_1gram_similarity_1', 'average_title_2gram_similarity_1', 'average_title_1gram_similarity_2', 'average_title_2gram_similarity_2', 'average_title_1gram_similarity_3', 'average_title_2gram_similarity_3', 'average_title_1gram_similarity_4', 'average_title_2gram_similarity_4', 'average_description_1gram_similarity_1', 'average_description_2gram_similarity_1', 'average_description_2gram_similarity_2', 'average_description_1gram_similarity_2', 'average_description_1gram_similarity_3', 'average_description_2gram_similarity_3', 'average_description_1gram_similarity_4', 'average_description_2gram_similarity_4']
   
   ####Random forest model#####
   print("Begin random forest model")
