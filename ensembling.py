@@ -1,8 +1,7 @@
 import evaluation
-import cPickle
+import pickle
 import math
 import pandas as pd
-import numpy as np
 
 '''
 Kaggle CrowdFlower Search Results Relevance Competition - Ensembling Script
@@ -29,14 +28,12 @@ the csv file ultimately submitted to Kaggle.
 __author__ : Mark Nagelberg
 '''
 
-#Find the best ensemble model, trying every combination of the following weights - 0, .2, .4, .6, .8, 1
-
 #Load the StratifiedKFold cross validation prediction data for the five models.
-rf_cv_predictions = cPickle.load(open('rf_cv_test_data.pkl', 'r'))
-svc_cv_predictions = cPickle.load(open('svc_cv_test_data.pkl', 'r'))
-adaboost_cv_predictions = cPickle.load(open('adaboost_cv_test_data.pkl', 'r'))
-tfidf_v1_cv_predictions = cPickle.load(open('tfidf_v1_test_data.pkl', 'r'))
-tfidf_v2_cv_predictions = cPickle.load(open('tfidf_v2_test_data.pkl', 'r'))
+rf_cv_predictions = pickle.load(open('rf_cv_test_data.pkl', 'r'))
+svc_cv_predictions = pickle.load(open('svc_cv_test_data.pkl', 'r'))
+adaboost_cv_predictions = pickle.load(open('adaboost_cv_test_data.pkl', 'r'))
+tfidf_v1_cv_predictions = pickle.load(open('tfidf_v1_test_data.pkl', 'r'))
+tfidf_v2_cv_predictions = pickle.load(open('tfidf_v2_test_data.pkl', 'r'))
 
 preds = [rf_cv_predictions, svc_cv_predictions, adaboost_cv_predictions, tfidf_v1_cv_predictions, tfidf_v2_cv_predictions]
 
@@ -55,6 +52,7 @@ for w in wt_list:
 	if sum(w) == 1.0:
 		wt_final.append(w)
 
+#Find the optimal weights.
 max_average_score = 0
 max_weights = None
 for wt in wt_final:
@@ -72,18 +70,19 @@ print "Best set of weights: " + str(max_weights)
 print "Corresponding score: " + str(max_average_score)
 
 
-#Now perform the best ensembling on the full dataset and output the model to submit
-rf_final_predictions = cPickle.load(open('rf_final_predictions.pkl', 'r'))
-svc_final_predictions = cPickle.load(open('svc_final_predictions.pkl', 'r'))
-adaboost_final_predictions = cPickle.load(open('adaboost_final_predictions.pkl', 'r'))
-tfidf_v1_final_predictions = cPickle.load(open('tfidf_v1_final_predictions.pkl', 'r'))
-tfidf_v2_final_predictions = cPickle.load(open('tfidf_v2_final_predictions.pkl', 'r'))
+#Now perform the best ensembling on the full dataset 
+#using the optimanl weights determined above
+rf_final_predictions = pickle.load(open('rf_final_predictions.pkl', 'r'))
+svc_final_predictions = pickle.load(open('svc_final_predictions.pkl', 'r'))
+adaboost_final_predictions = pickle.load(open('adaboost_final_predictions.pkl', 'r'))
+tfidf_v1_final_predictions = pickle.load(open('tfidf_v1_final_predictions.pkl', 'r'))
+tfidf_v2_final_predictions = pickle.load(open('tfidf_v2_final_predictions.pkl', 'r'))
 
 preds = [rf_final_predictions, svc_final_predictions, adaboost_final_predictions, tfidf_v1_final_predictions, tfidf_v2_final_predictions]
 
 weighted_prediction = sum([max_weights[x] * preds[x]["prediction"].astype(int) for x in range(5)])
 weighted_prediction = [int(round(p)) for p in weighted_prediction]
 
-test = cPickle.load(open('test_extracted_df.pkl', 'r'))
+test = pickle.load(open('test_extracted_df.pkl', 'r'))
 submission = pd.DataFrame({"id": test["id"], "prediction": weighted_prediction})
 submission.to_csv('ensembled_submission.csv', index=False)
